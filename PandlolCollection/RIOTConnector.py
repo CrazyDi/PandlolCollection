@@ -1,7 +1,7 @@
 import requests
 
 from config import Config
-from constant import PLATFORM
+from PandlolCollection.constant import PLATFORM
 
 
 class RIOTConnector:
@@ -20,13 +20,14 @@ class RIOTConnector:
 
         self.url = f'https://{platform_name}/lol/{api}/{Config.API_VERSION}/{api_type}'
 
-        for param in url_params['path']:
-            self.url += '/' + url_params['path'][param]
+        if url_params.get('path_params') is not None:
+            for param in url_params['path_params']:
+                self.url += '/' + url_params['path_params'][param]
 
-        if len(url_params['query']) > 0:
+        if url_params.get('query_params') is not None:
             self.url += '?'
-            for param in url_params['query']:
-                self.url += f'{param}={url_params["query"][param]}'
+            for param in url_params['query_params']:
+                self.url += f'{param}={url_params["query_params"][param]}'
 
         self.headers = {
             "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) \
