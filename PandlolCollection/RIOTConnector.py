@@ -1,4 +1,5 @@
 import requests
+from time import sleep
 
 from config import Config
 from PandlolCollection.constant import PLATFORM
@@ -30,8 +31,7 @@ class RIOTConnector:
                 self.url += f'{param}={url_params["query_params"][param]}'
 
         self.headers = {
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) \
-            Chrome/87.0.4280.141 Safari/537.36",
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/89.0.4389.128 Safari/537.36",
             "Accept-Language": "ru-RU,ru;q=0.9,en-US;q=0.8,en;q=0.7,be;q=0.6",
             "Accept-Charset": "application/x-www-form-urlencoded; charset=UTF-8",
             "Origin": "https://developer.riotgames.com",
@@ -42,6 +42,7 @@ class RIOTConnector:
         """
         Метод осуществляет запрос к RIOT API и возвращает результат
         """
+        sleep(1.2)
         try:
             response = requests.get(url=self.url, headers=self.headers)
 

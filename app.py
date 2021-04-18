@@ -1,5 +1,5 @@
-from PandlolCollection.RIOTConnector import RIOTConnector
+from PandlolCollection.Loader import Loader
 
 
 if __name__ == '__main__':
-    new = RIOTConnector('RU', 'summoner', 'summoners/by-name', path={'name': 'katuhis'})
+    Loader().load_summoner_list()

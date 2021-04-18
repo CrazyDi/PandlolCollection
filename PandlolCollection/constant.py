@@ -3,7 +3,7 @@ QUEUE = {
         {
             "map": "Summoner's Rift",
             "description": "5v5 Ranked Solo games",
-            "name": "RANKED_SOLO_5X5"
+            "name": "RANKED_SOLO_5x5"
         },
     440:
         {
