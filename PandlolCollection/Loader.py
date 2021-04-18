@@ -15,6 +15,7 @@ class Loader:
 
         # по каждому рангу
         for tier in TIER:
+            
             # по каждому дивизиону
             for division in DIVISION:
                 # по каждому виду очереди
