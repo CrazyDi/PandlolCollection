@@ -15,7 +15,7 @@ class Loader:
 
         # по каждому рангу
         for tier in TIER:
-            
+
             # по каждому дивизиону
             for division in DIVISION:
                 # по каждому виду очереди
@@ -25,7 +25,9 @@ class Loader:
                         page = 1
                         # запрашиваем первую страницу
                         api_connector = RIOTConnector(platform, api, api_type,
-                                                      path_params={"queue": QUEUE[queue]['name'], "tier": TIER[tier], "division": DIVISION[division]},
+                                                      path_params={"queue": QUEUE[queue]['name'],
+                                                                   "tier": TIER[tier],
+                                                                   "division": DIVISION[division]},
                                                       query_params={"page": page})
                         response = api_connector.get_request()
 
@@ -75,7 +77,10 @@ class Loader:
                     if response['status'] == "OK":
                         result = db_connector.write_data('summoner_list',
                                                          response['data']['entries'],
-                                                         default_fields={"platform": platform, "tier": elo, "rank": "I", "queueType": QUEUE[queue]['name']},
+                                                         default_fields={"platform": platform,
+                                                                         "tier": elo,
+                                                                         "rank": "I",
+                                                                         "queueType": QUEUE[queue]['name']},
                                                          filter_columns=['summonerId'],
                                                          value_columns=['summonerName'])
 

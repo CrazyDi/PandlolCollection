@@ -1,3 +1,5 @@
+from datetime import datetime
+
 from pymongo import MongoClient, InsertOne, ReplaceOne
 from pymongo.errors import BulkWriteError
 
@@ -32,6 +34,8 @@ class MongoDBConnector:
 
             for value_column in value_columns:
                 value_record[value_column] = record[value_column]
+
+            # value_record['change_date'] = datetime.today()
 
             records.append(InsertOne(value_record))
             # records.append(ReplaceOne(filter_record, value_record, upsert=True))

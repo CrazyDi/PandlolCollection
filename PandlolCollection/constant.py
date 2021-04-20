@@ -37,3 +37,23 @@ PLATFORM = {"BR1": "br1.api.riotgames.com",
             "OC1": "oc1.api.riotgames.com",
             "TR1": "tr1.api.riotgames.com",
             "RU": "ru.api.riotgames.com"}
+
+REGION = {
+    "AMERICAS": "americas.api.riotgames.com",
+    "ASIA": "asia.api.riotgames.com",
+    "EUROPE": "europe.api.riotgames.com"
+}
+
+PLATFORM_REGION = {
+    "BR1": "AMERICAS",
+    "EUN1": "EUROPE",
+    "EUW1": "EUROPE",
+    "JP1": "ASIA",
+    "KR": "ASIA",
+    "LA1": "AMERICAS",
+    "LA2": "AMERICAS",
+    "NA1": "AMERICAS",
+    "OC1": "AMERICAS",
+    "TR1": "EUROPE",
+    "RU": "EUROPE"
+}
