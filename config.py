@@ -10,4 +10,3 @@ if os.path.exists(dotenv_path):
 class Config:
     # path = os.
     RIOT_API = os.environ.get('RIOT_API', '1')
-    API_VERSION = os.environ.get('API_VERSION', '2')

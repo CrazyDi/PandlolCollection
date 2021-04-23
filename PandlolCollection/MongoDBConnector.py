@@ -1,7 +1,7 @@
 from datetime import datetime
 
-from pymongo import MongoClient, InsertOne, ReplaceOne
-from pymongo.errors import BulkWriteError
+from pymongo import MongoClient, InsertOne
+from pymongo.errors import BulkWriteError, PyMongoError
 
 
 class MongoDBConnector:
@@ -12,44 +12,36 @@ class MongoDBConnector:
         self._client = MongoClient(host, port)
         self.db = self._client.pandlol
 
-    def write_data(self, table_name: str, data, default_fields, filter_columns, value_columns):
+    def insert_record(self, table_name: str, record):
         """
-        Метод записывает данные в таблицу по условию.
-        Если данные по фильтру найдена, они перезаписываются, если нет - добавляются
-        :param table_name: Наименование таблицы
-        :param data: Данные
-        :param filter_columns: Колонки фильтра
-        :param value_columns: Колонки данных
-        :return: Результат выполнения операции
+        Добавление записи в таблицу
+        :param table_name: Название таблицы
+        :param record: Запись
+        :return: Номер записи, если
         """
-        table = self.db[table_name]
-        records = []
-
-        for record in data:
-            filter_record = default_fields.copy()
-            value_record = default_fields.copy()
-            for filter_column in filter_columns:
-                filter_record[filter_column] = record[filter_column]
-                value_record[filter_column] = record[filter_column]
-
-            for value_column in value_columns:
-                value_record[value_column] = record[value_column]
-
-            # value_record['change_date'] = datetime.today()
-
-            records.append(InsertOne(value_record))
-            # records.append(ReplaceOne(filter_record, value_record, upsert=True))
-
         try:
-            if len(records) > 0:
-                result = table.bulk_write(records)
+            table = self.db[table_name]
 
-                return result.bulk_api_result
-        except BulkWriteError as bwe:
-            return bwe.details
+            inserted_id = table.insert_one(record).inserted_id
+            return {'status': 'OK', 'result': inserted_id}
+        except PyMongoError:
+            return {'status': 'ERROR', 'error': PyMongoError}
 
-    def read_data(self):
-        pass
+    def find_record(self, table_name: str, record):
+        """
+        Поиск записи в таблице
+        :param table_name: Название таблицы
+        :param record: Запись, которую ищем
+        :return: Результат поиска
+        """
+        try:
+            table = self.db[table_name]
+
+            found_record = table.find_one(record)
+
+            return {'status': 'OK', 'result': found_record}
+        except PyMongoError:
+            return {'status': 'ERROR', 'error': PyMongoError}
 
     def close_connection(self):
         self._client.close()

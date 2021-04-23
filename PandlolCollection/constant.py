@@ -13,7 +13,10 @@ QUEUE = {
         }
     }
 
-TIER = {1: "DIAMOND",
+TIER = {1000: "CHALLENGER",
+        100: "GRANDMASTER",
+        10: "MASTER",
+        1: "DIAMOND",
         2: "PLATINUM",
         3: "GOLD",
         4: "SILVER",
@@ -56,4 +59,10 @@ PLATFORM_REGION = {
     "OC1": "AMERICAS",
     "TR1": "EUROPE",
     "RU": "EUROPE"
+}
+
+LEAGUE = {
+    10: 'masterleagues',
+    100: 'grandmasterleagues',
+    1000: 'challengerleagues'
 }

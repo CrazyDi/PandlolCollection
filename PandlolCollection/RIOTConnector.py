@@ -2,14 +2,14 @@ import requests
 from time import sleep
 
 from config import Config
-from PandlolCollection.constant import PLATFORM
+from PandlolCollection.constant import PLATFORM, PLATFORM_REGION, REGION
 
 
 class RIOTConnector:
     """
     Класс доступа к RIOT API
     """
-    def __init__(self, platform: str, api: str, api_type: str, **url_params):
+    def __init__(self, platform: str, api: str, version: str,  api_type: str, **url_params):
         """
         Инициализация запроса
         :param platform: Платформа (константа PLATFORM)
@@ -17,21 +17,28 @@ class RIOTConnector:
         :param api_type: Тип API
         :param url_params: Параметры запроса
         """
-        platform_name = PLATFORM[platform]
+        if version == 'v5':
+            platform_name = REGION[PLATFORM_REGION[platform]]
+        else:
+            platform_name = PLATFORM[platform]
 
-        self.url = f'https://{platform_name}/lol/{api}/{Config.API_VERSION}/{api_type}'
+        self.url = f'https://{platform_name}/lol/{api}/{version}/{api_type}'
 
         if url_params.get('path_params') is not None:
             for param in url_params['path_params']:
                 self.url += '/' + url_params['path_params'][param]
 
+        if url_params.get('type_params') is not None:
+            self.url += '/' + url_params['type_params']
+
         if url_params.get('query_params') is not None:
             self.url += '?'
             for param in url_params['query_params']:
-                self.url += f'{param}={url_params["query_params"][param]}'
+                self.url += f'{param}={url_params["query_params"][param]}' + '&'
+            self.url = self.url.rstrip('&')
 
         self.headers = {
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/89.0.4389.128 Safari/537.36",
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/90.0.4430.85 Safari/537.36",
             "Accept-Language": "ru-RU,ru;q=0.9,en-US;q=0.8,en;q=0.7,be;q=0.6",
             "Accept-Charset": "application/x-www-form-urlencoded; charset=UTF-8",
             "Origin": "https://developer.riotgames.com",
