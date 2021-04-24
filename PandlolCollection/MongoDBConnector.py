@@ -27,7 +27,7 @@ class MongoDBConnector:
         except PyMongoError:
             return {'status': 'ERROR', 'error': PyMongoError}
 
-    def find_record(self, table_name: str, record):
+    def read_record(self, table_name: str, record):
         """
         Поиск записи в таблице
         :param table_name: Название таблицы

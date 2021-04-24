@@ -19,68 +19,75 @@ class Loader:
     def load_random_data(self):
         """
         Загрузка случайных игр 11 сезона
-        :return:
         """
         self.db_connector = MongoDBConnector()
 
+        # По каждой платформе
         for platform in PLATFORM:
             self.platform = platform
+            # По каждому рангу
             for tier in TIER:
                 self.tier = tier
 
+                # Для низкого эло
                 if tier < 10:
-                    for division in DIVISION:
-                        start = datetime.now()
-                        self.division = division
-                        result = self.load_random_match_list(count=10)
-                        end = datetime.now()
-                        print('PLATFORM:', platform,
-                              '\nTIER: ', TIER[tier],
-                              '\nDIVISION:', DIVISION[division],
-                              '\nRESULT:', result,
-                              '\nSTART:', start.strftime("%b %d %H:%M:%S"),
-                              '\nEND:', end.strftime("%b %d %H:%M:%S"),
-                              '\nTIME:', (end - start).seconds)
-                else:
-                    start = datetime.now()
-                    result = self.load_random_match_list(count=10)
-                    end = datetime.now()
-                    print('PLATFORM:', platform,
-                          '\nTIER: ', TIER[tier],
-                          '\nRESULT:', result,
-                          '\nSTART:', start.strftime("%b %d %H:%M:%S"),
-                          '\nEND:', end.strftime("%b %d %H:%M:%S"),
-                          '\nTIME:', (end - start).seconds)
+                    division_list = DIVISION
+                else: # для высого это рангов нет, возьмем только один
+                    division_list = {1: "I"}
 
+                # По каждому дивизиону
+                for division in division_list:
+                    start = datetime.now()
+
+                    self.division = division
+
+                    result = self.load_random_match_list(count_summoner=10)
+
+                    end = datetime.now()
+
+                    print(
+                        'PLATFORM:', platform,
+                        '\nTIER: ', TIER[tier],
+                        '\nDIVISION:', DIVISION[division],
+                        '\nRESULT:', result,
+                        '\nSTART:', start.strftime("%b %d %H:%M:%S"),
+                        '\nEND:', end.strftime("%b %d %H:%M:%S"),
+                        '\nTIME:', (end - start).seconds
+                    )
+
+        # Закрываем соединение
         self.db_connector.close_connection()
 
-    def load_random_match_list(self, count: int = 100):
+    def load_random_match_list(self, count_summoner: int = 100):
         """
         Загрузка заданного количества рандомных матчей по параметрам
-        :param count: Кол-во матчей, которые надо загрузить
+        :param count_summoner: Кол-во призывателей, матчи которых надо загрузить
         :return: Кол-во загруженных матчей
         """
         i = 1
+        result = 0
 
-        while i < count:
-            result = {'status': 'begin'}
+        # Выбрать заданное количество призывателей
+        while i < count_summoner:
+            # Выберем список матчей рандомного призывателя
+            match_list = self.load_match_list_random_summoner()
 
-            while result.get('result') != 'inserted':
-                match_list = self.load_random_match()
-
-                for match_id in match_list:
-                    result = self.write_random_match(match_id)
+            for match_id in match_list:
+                count_matches = self.write_random_match(match_id)
+                result += count_matches
 
             i += 1
 
-        return i
+        return result
 
     def write_random_match(self, match_id):
         """
         Запись найденного матча в файл
         :param match_id: Идентификатор мачта
-        :return: Результат
+        :return: Кол-во записанных матчей
         """
+        result = 0
+
         record_to_find = {'matchId': match_id}
 
         find_result = self.db_connector.read_record('match_list', record_to_find)
@@ -94,17 +101,16 @@ class Loader:
                 insert_result = self.db_connector.insert_record('match_list', record_to_insert)
 
                 if insert_result['status'] == 'OK':
-                    result = {'status': 'OK', 'result': 'inserted'}
-                else:
-                    result = {'status': 'ERROR', 'error': insert_result['error']}
-            else:
-                result = {'status': 'OK', 'result': 'existed'}
-        else:
-            result = {'status': 'ERROR', 'error': find_result['error']}
+                    result = 1
 
         return result
 
-    def load_random_match(self, count_matches=100):
+    def load_match_list_random_summoner(self, count_matches=100):
+        """
+        Функция ищет указанное количество матчей рандомного призывателя
+        :param count_matches: Кол-во матчей
+        :return: Кол-во матчей
+        """
 
         match_list = []
 

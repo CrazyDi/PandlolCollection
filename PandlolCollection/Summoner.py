@@ -13,11 +13,18 @@ class Summoner:
         self.summoner_name = summoner_name
 
     def get_summoner_match_list(self, start=0, count=20):
-        riot_connector = RIOTConnector(self.platform, 'match', 'v5', 'matches/by-puuid',
-                                       path_params={'puuid': self.puuid},
-                                       type_params='ids',
-                                       query_params={'start': start,
-                                                     'count': count})
+        riot_connector = RIOTConnector(
+            self.platform,
+            'match',
+            'v5',
+            'matches/by-puuid',
+            path_params={'puuid': self.puuid},
+            type_params='ids',
+            query_params={
+                'start': start,
+                'count': count
+            }
+        )
         response = riot_connector.get_request()
         if response['status'] == 'OK':
             result = response['data']
@@ -25,3 +32,4 @@ class Summoner:
             result = []
 
         return result
+
