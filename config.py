@@ -8,5 +8,7 @@ if os.path.exists(dotenv_path):
 
 # Базовые настройки приложения
 class Config:
-    # path = os.
     RIOT_API = os.environ.get('RIOT_API', '1')
+    SQL_CONNECTION_STRING = os.environ.get('SQL_CONNECTION_STRING', 'sqlite:///data.db')
+    NOSQL_CONNECTION_STRING = os.environ.get('NOSQL_CONNECTION_STRING', "mongodb://localhost:27017/")
+    DATABASE = os.environ.get('DATABASE', 'pandlol')
