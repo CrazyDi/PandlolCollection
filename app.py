@@ -26,10 +26,11 @@ if __name__ == '__main__':
                     record={
                         "platform": platform,
                         "tier": tier,
-                        "division": 1,
+                        "division": division,
                         "queue": 420
                     }
                 )
+                #loader_tier.load_max_tier_page()
                 loader_tier.load_random_match_list()
 
     # закрываем соединение

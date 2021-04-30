@@ -40,34 +40,41 @@ class LoaderTier(LOLObject):
         while i < count_summoner:
             # Выберем список матчей рандомного призывателя
             # для начала найдем рандомного призывателя
-            max_page = 100
             summoner_list = []
 
             # генерируем рандомную страницу призывателей для низкого эло
             if self.tier < 10:
-                while len(summoner_list) == 0:
-                    if max_page < 1:
-                        max_page = 1
+                result_page_num = self.nosql_read_one(
+                    table_name='page_list',
+                    record={
+                        'platform': self.platform,
+                        'tier': self.tier,
+                        'division': self.division,
+                        'queue': self.queue
+                    }
+                )
+                if result_page_num['status'] == 'OK':
+                    max_page = result_page_num.get('result').get('max_page')
+                else:
+                    max_page = 10
 
-                    summoner_page = random.randint(1, max_page)
+                summoner_page = random.randint(1, max_page)
 
-                    page_result = self.get_request(
-                        self.platform,
-                        'league',
-                        'v4',
-                        'entries',
-                        path_params={
-                            'queue': QUEUE[self.queue]['name'],
-                            'tier': TIER[self.tier],
-                            'division': DIVISION[self.division]
-                        },
-                        query_params={'page': summoner_page}
-                    )
+                page_result = self.get_request(
+                    self.platform,
+                    'league',
+                    'v4',
+                    'entries',
+                    path_params={
+                        'queue': QUEUE[self.queue]['name'],
+                        'tier': TIER[self.tier],
+                        'division': DIVISION[self.division]
+                    },
+                    query_params={'page': summoner_page}
+                )
 
-                    if page_result.get('status') == 'OK':
-                        summoner_list = page_result.get('data')
-
-                    max_page = int(max_page / 2)
+                if page_result.get('status') == 'OK':
+                    summoner_list = page_result.get('data')
             else:
                 # генерируем страницу призывателей для высокого ело
                 high_elo_result = self.get_request(
@@ -135,7 +142,7 @@ class LoaderTier(LOLObject):
             for match_id in match_list:
                 # Запишем матч в БД
                 record_to_find = {'matchId': match_id}
-                find_result = self.nosql_read_one('match_test', record_to_find)
+                find_result = self.nosql_read_one('match_list', record_to_find)
 
                 if find_result.get('status') == 'OK' and find_result.get('result') is None:
                     record_to_insert = {
@@ -144,7 +151,7 @@ class LoaderTier(LOLObject):
                         'dateInsert': datetime.today(),
                         'dateUpdate': None
                     }
-                    insert_result = self.nosql_insert('match_test', record_to_insert)
+                    insert_result = self.nosql_insert('match_list', record_to_insert)
 
                     if insert_result['status'] == 'OK':
                         result += 1
@@ -166,4 +173,88 @@ class LoaderTier(LOLObject):
         return result
 
     def load_max_tier_page(self):
-            pass
+        start = datetime.now()
+
+        not_found = True
+        delta = 50
+        curr_page = {
+            'num': 100,
+            'len': 0
+        }
+        next_page = {
+            'num': 101,
+            'len': 0
+        }
+
+        while not_found:
+            curr_result = self.get_request(
+                self.platform,
+                'league',
+                'v4',
+                'entries',
+                path_params={
+                    'queue': QUEUE[420]['name'],
+                    'tier': TIER[self.tier],
+                    'division': DIVISION[self.division]
+                },
+                query_params={'page': curr_page['num']}
+            )
+
+            if curr_result['status'] == 'OK':
+                curr_page['len'] = len(curr_result['data'])
+
+            if curr_page['len'] > 0:
+                next_result = self.get_request(
+                    self.platform,
+                    'league',
+                    'v4',
+                    'entries',
+                    path_params={
+                        'queue': QUEUE[420]['name'],
+                        'tier': TIER[self.tier],
+                        'division': DIVISION[self.division]
+                    },
+                    query_params={'page': next_page['num']}
+                )
+
+                if next_result['status'] == 'OK':
+                    next_page['len'] = len(next_result['data'])
+
+                if next_page['len'] == 0:
+                    not_found = False
+                else:
+                    curr_page['num'] += delta
+            else:
+                curr_page['num'] -= delta
+                delta = round(delta / 2)
+                if delta == 0:
+                    delta = 1
+
+            next_page['num'] = curr_page['num'] + 1
+
+        # записываем страницу в БД
+        record_to_find = {
+            'platform': self.platform,
+            'queue': 420,
+            'tier': self.tier,
+            'division': self.division
+        }
+        record_to_update = {
+            'max_page': curr_page['num']
+        }
+
+        result = self.nosql_update('page_list', record_to_find, record_to_update)
+
+        end = datetime.now()
+
+        print(
+            'PLATFORM:', self.platform,
+            '\nTIER: ', TIER[self.tier],
+            '\nDIVISION:', DIVISION[self.division],
+            '\nRESULT:', curr_page['num'],
+            '\nSTART:', start.strftime("%b %d %H:%M:%S"),
+            '\nEND:', end.strftime("%b %d %H:%M:%S"),
+            '\nTIME:', (end - start).seconds
+        )
+
+        return result

@@ -164,8 +164,25 @@ class LOLObject:
     def sql_update(self):
         pass
 
-    def nosql_update(self):
-        pass
+    def nosql_update(self, table_name, record_to_find, record_to_update):
+        """
+        Метод изменения записи
+        :param table_name: Таблица
+        :param record_to_find: Запись, которую надо переписать
+        :param record_to_update: Поля, которые надо обновить
+        :return: Результат
+        """
+        try:
+            if self.__nosql_database:
+                table = self.__nosql_database[table_name]
+
+                result = table.update_one(record_to_find, {'$set': record_to_update}, upsert=True)
+
+                return {'status': 'OK', 'result': result}
+            else:
+                raise ConnectionFailure
+        except PyMongoError:
+            return {'status': 'ERROR', 'error': PyMongoError}
 
     def sql_delete(self):
         pass
