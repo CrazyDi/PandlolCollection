@@ -10,12 +10,19 @@ QUEUE = {
             "map": "Summoner's Rift",
             "description": "5v5 Ranked Flex games",
             "name": "RANKED_FLEX_SR"
+        },
+    450:
+        {
+            "map": "Howling Abyss",
+            "description": "5v5 ARAM games",
+            "name": "ARAM"
         }
     }
 
 TIER = {1000: "CHALLENGER",
         100: "GRANDMASTER",
         10: "MASTER",
+        0: "UNRANKED",
         1: "DIAMOND",
         2: "PLATINUM",
         3: "GOLD",

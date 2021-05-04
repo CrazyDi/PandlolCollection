@@ -2,7 +2,6 @@ import requests
 
 from pymongo import MongoClient
 from pymongo.errors import PyMongoError, ConnectionFailure
-from sqlalchemy.engine.base import Connection
 from time import sleep
 from typing import Dict
 
@@ -16,8 +15,7 @@ class LOLObject:
     """
     def __init__(
             self,
-            nosql_connection: MongoClient = None,
-            sql_connection: Connection = None,
+            connection: MongoClient = None,
             record: Dict = None
     ):
         """
@@ -26,12 +24,10 @@ class LOLObject:
         :param sql_connection: Коннект к SQL БД
         :param record: Словарь с записью объекта
         """
-        if nosql_connection:
-            self.__nosql_database = nosql_connection.get_database(Config.DATABASE)
+        if connection:
+            self.__database = connection.get_database(Config.DATABASE)
         else:
-            self.__nosql_database = None
-
-        self.__sql_connection = sql_connection
+            self.__database = None
 
         if record:
             self._record = record
@@ -118,10 +114,7 @@ class LOLObject:
                     }
             }
 
-    def sql_insert(self):
-        pass
-
-    def nosql_insert(self, table_name: str, record: Dict):
+    def _insert(self, table_name: str, record: Dict):
         """
         Метод добавления записи в таблицу NOSQL БД
         :param table_name: Имя таблицы
@@ -129,8 +122,8 @@ class LOLObject:
         :return: Результат
         """
         try:
-            if self.__nosql_database:
-                table = self.__nosql_database[table_name]
+            if self.__database:
+                table = self.__database[table_name]
 
                 inserted_id = table.insert_one(record).inserted_id
                 return {'status': 'OK', 'result': inserted_id}
@@ -139,10 +132,7 @@ class LOLObject:
         except PyMongoError:
             return {'status': 'ERROR', 'error': PyMongoError}
 
-    def sql_read_one(self):
-        pass
-
-    def nosql_read_one(self, table_name: str, record: Dict):
+    def _read_one(self, table_name: str, record: Dict):
         """
         Метод ищет первуб запись, удовлетворяющую поданным условиям
         :param table_name: Имя таблицы
@@ -150,8 +140,8 @@ class LOLObject:
         :return: Результат
         """
         try:
-            if self.__nosql_database:
-                table = self.__nosql_database[table_name]
+            if self.__database:
+                table = self.__database[table_name]
 
                 found_record = table.find_one(record)
 
@@ -161,10 +151,7 @@ class LOLObject:
         except PyMongoError:
             return {'status': 'ERROR', 'error': PyMongoError}
 
-    def sql_update(self):
-        pass
-
-    def nosql_update(self, table_name, record_to_find, record_to_update):
+    def _update(self, table_name, record_to_find, record_to_update):
         """
         Метод изменения записи
         :param table_name: Таблица
@@ -173,8 +160,8 @@ class LOLObject:
         :return: Результат
         """
         try:
-            if self.__nosql_database:
-                table = self.__nosql_database[table_name]
+            if self.__database:
+                table = self.__database[table_name]
 
                 result = table.update_one(record_to_find, {'$set': record_to_update}, upsert=True)
 
@@ -184,8 +171,21 @@ class LOLObject:
         except PyMongoError:
             return {'status': 'ERROR', 'error': PyMongoError}
 
-    def sql_delete(self):
-        pass
+    def _nosql_delete(self, table_name, record_to_delete):
+        """
+        Метод удаления записей
+        :param table_name:
+        :param record_to_delete:
+        :return:
+        """
+        try:
+            if self.__database:
+                table = self.__database[table_name]
 
-    def nosql_delete(self):
-        pass
+                result = table.delete_many(record_to_delete)
+
+                return {'status': 'OK', 'result': result}
+            else:
+                raise ConnectionFailure
+        except PyMongoError:
+            return {'status': 'ERROR', 'error': PyMongoError}
