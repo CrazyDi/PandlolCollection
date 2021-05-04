@@ -37,7 +37,7 @@ class Summoner(LOLObject):
 
     @property
     def rank(self) -> List:
-        return self._record.get('rank', {})
+        return self._record.get('rank', [])
 
     def storage_get_by_id(self) -> Dict:
         """
