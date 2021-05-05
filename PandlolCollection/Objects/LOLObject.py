@@ -3,7 +3,7 @@ import requests
 from pymongo import MongoClient
 from pymongo.errors import PyMongoError, ConnectionFailure
 from time import sleep
-from typing import Dict
+from typing import Dict, List
 
 from config import Config
 from PandlolCollection.constant import REGION, PLATFORM_REGION, PLATFORM
@@ -16,23 +16,33 @@ class LOLObject:
     def __init__(
             self,
             connection: MongoClient = None,
-            record: Dict = None
+            record: Dict = None,
+            table_name: str = "",
+            find_field: List = None,
+            update_field: List = None
     ):
         """
         Конструктор
-        :param nosql_connection: Коннект к NOSQL БД
-        :param sql_connection: Коннект к SQL БД
+        :param connection: Коннект к NOSQL БД
+        :param table_name: Наименование таблицы
         :param record: Словарь с записью объекта
+        :param find_field: Поля для поиска
+        :param update_field: Поля для записи
         """
         if connection:
             self.__database = connection.get_database(Config.DATABASE)
+            self.__table = self.__database[table_name]
         else:
             self.__database = None
+            self.__table = None
 
         if record:
             self._record = record
         else:
             self._record = {}
+
+        self.__find_field = find_field
+        self.__update_field = update_field
 
     @staticmethod
     def get_request(
@@ -41,7 +51,7 @@ class LOLObject:
             version: str,
             api_type: str,
             **url_params
-    ):
+    ) -> Dict:
         """
         Метод получения данных из RIOT API
         :param platform: Платформа
@@ -114,36 +124,40 @@ class LOLObject:
                     }
             }
 
-    def _insert(self, table_name: str, record: Dict):
+    @property
+    def __find_record(self) -> Dict:
         """
-        Метод добавления записи в таблицу NOSQL БД
-        :param table_name: Имя таблицы
-        :param record: Запись для добавления
+        Запись для поиска
+        """
+        record = {}
+
+        if self.__find_field:
+            for f in self.__find_field:
+                record[f] = self._record[f]
+
+        return record
+
+    @property
+    def __update_record(self) -> Dict:
+        """
+        Запись для обновления
+        """
+        record = {}
+
+        if self.__update_field:
+            for f in self.__update_field:
+                record[f] = self._record[f]
+
+        return record
+
+    def read_one(self) -> Dict:
+        """
+        Метод ищет первуб запись, удовлетворяющую условиям
         :return: Результат
         """
         try:
             if self.__database:
-                table = self.__database[table_name]
-
-                inserted_id = table.insert_one(record).inserted_id
-                return {'status': 'OK', 'result': inserted_id}
-            else:
-                raise ConnectionFailure
-        except PyMongoError:
-            return {'status': 'ERROR', 'error': PyMongoError}
-
-    def _read_one(self, table_name: str, record: Dict):
-        """
-        Метод ищет первуб запись, удовлетворяющую поданным условиям
-        :param table_name: Имя таблицы
-        :param record: Условия поиска
-        :return: Результат
-        """
-        try:
-            if self.__database:
-                table = self.__database[table_name]
-
-                found_record = table.find_one(record)
+                found_record = self.__table.find_one(self.__find_record)
 
                 return {'status': 'OK', 'result': found_record}
             else:
@@ -151,40 +165,42 @@ class LOLObject:
         except PyMongoError:
             return {'status': 'ERROR', 'error': PyMongoError}
 
-    def _update(self, table_name, record_to_find, record_to_update):
+    def insert(self) -> Dict:
         """
-        Метод изменения записи
-        :param table_name: Таблица
-        :param record_to_find: Запись, которую надо переписать
-        :param record_to_update: Поля, которые надо обновить
-        :return: Результат
+        Метод добавления записи в таблицу NOSQL БД
         """
         try:
             if self.__database:
-                table = self.__database[table_name]
-
-                result = table.update_one(record_to_find, {'$set': record_to_update}, upsert=True)
-
-                return {'status': 'OK', 'result': result}
+                inserted_result = self.__table.insert_one(self._record)
+                return {'status': 'OK', 'result': inserted_result}
             else:
                 raise ConnectionFailure
         except PyMongoError:
             return {'status': 'ERROR', 'error': PyMongoError}
 
-    def _nosql_delete(self, table_name, record_to_delete):
+    def update(self) -> Dict:
         """
-        Метод удаления записей
-        :param table_name:
-        :param record_to_delete:
-        :return:
+        Метод изменения записи
         """
         try:
             if self.__database:
-                table = self.__database[table_name]
+                updated_result = self.__table.update_one(self.__find_record, {'$set': self.__update_record})
 
-                result = table.delete_many(record_to_delete)
+                return {'status': 'OK', 'result': updated_result}
+            else:
+                raise ConnectionFailure
+        except PyMongoError:
+            return {'status': 'ERROR', 'error': PyMongoError}
 
-                return {'status': 'OK', 'result': result}
+    def delete(self) -> Dict:
+        """
+        Метод удаления записей
+        """
+        try:
+            if self.__database:
+                deleted_result = self.__table.delete_many(self.__find_record)
+
+                return {'status': 'OK', 'result': deleted_result}
             else:
                 raise ConnectionFailure
         except PyMongoError:

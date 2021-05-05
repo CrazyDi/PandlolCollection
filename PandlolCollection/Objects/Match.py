@@ -1,13 +1,26 @@
-from datetime import datetime
+from pymongo import MongoClient
 from typing import Dict
 
 from PandlolCollection.Objects.LOLObject import LOLObject
+from PandlolCollection.Objects.MatchDetail import MatchDetail
 
 
 class Match(LOLObject):
     """
     Объект матча
     """
+    def __init__(
+            self,
+            connection: MongoClient,
+            record: Dict):
+        super().__init__(
+            connection=connection,
+            record=record,
+            table_name='match_list',
+            find_field=['id', 'platform'],
+            update_field=['date_insert', 'date_update']
+        )
+
     @property
     def platform(self) -> str:
         return self._record.get('platform')
@@ -16,23 +29,6 @@ class Match(LOLObject):
     def id(self) -> str:
         return self._record.get('id')
 
-    def insert(self) -> Dict:
-        """
-        Запись матча в хранилище
-        :return:
-        """
-        record_to_find = {'matchId': self.id}
-        find_result = self._read_one('match_test', record_to_find)
-
-        if find_result.get('status') == 'OK' and find_result.get('result') is None:
-            record_to_insert = {
-                'matchId': self.id,
-                'platform': self.platform,
-                'dateInsert': datetime.today(),
-                'dateUpdate': None
-            }
-            result = self._insert('match_test', record_to_insert)
-        else:
-            result = find_result
-
-        return result
+    @property
+    def match_detail(self) -> MatchDetail:
+        return self._record.get('match_detail')

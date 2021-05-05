@@ -1,6 +1,7 @@
 import random
 
 from datetime import datetime
+from pymongo import MongoClient
 from typing import List, Dict
 
 from PandlolCollection.constant import QUEUE, TIER, DIVISION
@@ -11,6 +12,18 @@ class Summoner(LOLObject):
     """
     Класс призывателя
     """
+    def __init__(
+            self,
+            connection: MongoClient,
+            record: Dict):
+        super().__init__(
+            connection=connection,
+            record=record,
+            table_name='summoner_list',
+            find_field=['platform', 'id'],
+            update_field=['account_id', 'puu_id', 'name', 'profile_icon_id', 'date_change', 'rank']
+        )
+
     @property
     def platform(self) -> str:
         return self._record.get('platform')
@@ -36,6 +49,10 @@ class Summoner(LOLObject):
         return self._record.get('profile_icon_id', 0)
 
     @property
+    def date_change(self) -> datetime:
+        return self._record.get('date_change', datetime.today())
+
+    @property
     def rank(self) -> List:
         return self._record.get('rank', [])
 
@@ -46,13 +63,7 @@ class Summoner(LOLObject):
         """
         result = {}
 
-        find_result = self._read_one(
-            'summoner_list',
-            record={
-                "platform": self.platform,
-                "id": self.id
-            }
-        )
+        find_result = self.read_one()
 
         if find_result['status'] == 'OK':
             result = find_result['result']
@@ -146,22 +157,13 @@ class Summoner(LOLObject):
                 self._record['puu_id'] = result['puu_id']
                 self._record['name'] = result['name']
                 self._record['profile_icon_id'] = result['profile_icon_id']
+                self._record['date_change'] = datetime.today()
                 self._record['rank'] = result['rank']
 
             # запишем информацию в хранилище
             self.insert()
 
         return self.puu_id is not None
-
-    def insert(self) -> Dict:
-        """
-        Добавление записи в хранилище
-        :return: Результат
-        """
-        record_to_write = self._record
-        record_to_write['date_change'] = datetime.today()
-
-        return self._insert('summoner_list', record_to_write)
 
     def get_random_match_list(self, count_match) -> List:
         """

@@ -1,5 +1,6 @@
 import random
 
+from pymongo import MongoClient
 from typing import Dict, List
 
 from PandlolCollection.constant import QUEUE, TIER, DIVISION, LEAGUE
@@ -10,6 +11,19 @@ class Rank(LOLObject):
     """
     Объект ранга
     """
+    def __init__(
+            self,
+            connection: MongoClient,
+            record: Dict
+    ):
+        super().__init__(
+            connection=connection,
+            record=record,
+            table_name='page_list',
+            find_field=['platform', 'queue', 'tier', 'division'],
+            update_field=['max_page']
+        )
+
     @property
     def platform(self) -> str:
         return self._record.get('platform')
@@ -35,15 +49,7 @@ class Rank(LOLObject):
             "delta": 50
         }
 
-        result_page = self._read_one(
-            table_name='page_list',
-            record={
-                'platform': self.platform,
-                'tier': self.tier,
-                'division': self.division,
-                'queue': self.queue
-            }
-        )
+        result_page = self.read_one()
 
         if result_page['status'] == 'OK' and result_page.get('result'):
             result['max_page'] = result_page['result'].get('max_page')
@@ -82,17 +88,15 @@ class Rank(LOLObject):
         Записывает максимальную страницу в хранилище
         :param max_page: Максимальная страница
         """
-        record_to_find = {
-            'platform': self.platform,
-            'queue': self.queue,
-            'tier': self.tier,
-            'division': self.division
-        }
-        record_to_update = {
-            'max_page': max_page
-        }
+        self._record['max_page'] = max_page
+        find_result = self.read_one()
 
-        return self._update('page_list', record_to_find, record_to_update)
+        if find_result['status'] == 'OK' and find_result['result'] is None:
+            result = self.insert()
+        else:
+            result = self.update()
+
+        return result
 
     def get_random_summoner_list(self) -> List:
         """

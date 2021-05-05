@@ -29,7 +29,7 @@ def load_max_tier_pages():
                     start = datetime.now()
 
                     rank = Rank(
-                        connection,
+                        connection=connection,
                         record={
                             "platform": platform,
                             "queue": 420,
@@ -136,7 +136,7 @@ def load_random_match_list(count_summoner: int = 10, count_match: int = 100):
                         # для начала найдем рандомного призывателя
                         # генерируем рандомную страницу призывателей для низкого эло
                         rank = Rank(
-                            connection,
+                            connection=connection,
                             record={
                                 "platform": platform,
                                 "queue": 420,
@@ -151,7 +151,7 @@ def load_random_match_list(count_summoner: int = 10, count_match: int = 100):
                             summoner_id = summoner_list[random.randint(0, len(summoner_list) - 1)]['summonerId']
 
                             summoner = Summoner(
-                                connection,
+                                connection=connection,
                                 record={
                                     "platform": platform,
                                     "id": summoner_id
@@ -166,14 +166,18 @@ def load_random_match_list(count_summoner: int = 10, count_match: int = 100):
 
                                 # Запишем матч в БД
                                 match = Match(
-                                    connection,
+                                    connection=connection,
                                     record={"platform": platform,
-                                            "id": match_id}
+                                            "id": match_id,
+                                            "date_insert": datetime.today(),
+                                            "date_update": None}
                                 )
-                                insert_result = match.insert()
+                                find_result = match.read_one()
+                                if find_result['status'] == 'OK' and find_result['result'] is None:
+                                    insert_result = match.insert()
 
-                                if insert_result['status'] == 'OK' and insert_result['result']:
-                                    result += 1
+                                    if insert_result['status'] == 'OK' and insert_result['result']:
+                                        result += 1
 
                         i += 1
 
