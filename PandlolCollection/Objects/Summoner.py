@@ -1,6 +1,6 @@
 import random
 
-from datetime import datetime
+from datetime import datetime, timedelta
 from pymongo import MongoClient
 from typing import List, Dict
 
@@ -65,8 +65,13 @@ class Summoner(LOLObject):
 
         find_result = self.read_one()
 
-        if find_result['status'] == 'OK':
+        if find_result['status'] == 'OK' and find_result['result']:
             result = find_result['result']
+            self._record['account_id'] = result['account_id']
+            self._record['puu_id'] = result['puu_id']
+            self._record['name'] = result['name']
+            self._record['profile_icon_id'] = result['profile_icon_id']
+            self._record['rank'] = result['rank']
 
         return result
 
@@ -146,8 +151,8 @@ class Summoner(LOLObject):
         Получение полной информации о призывателе по id
         :return: Результат
         """
-        result = self.storage_get_by_id()
-        if not result:
+        result_find = self.storage_get_by_id()
+        if not result_find or (datetime.today() - result_find.get('date_change', datetime.today())).days > 7:
             result = self.riot_get_by_id()
 
             # Если запись найдена
@@ -161,7 +166,10 @@ class Summoner(LOLObject):
                 self._record['rank'] = result['rank']
 
             # запишем информацию в хранилище
-            self.insert()
+            if not result_find:
+                self.insert()
+            else:
+                self.update()
 
         return self.puu_id is not None
 

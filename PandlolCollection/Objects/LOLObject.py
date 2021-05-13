@@ -43,6 +43,7 @@ class LOLObject:
 
         self.__find_field = find_field
         self.__update_field = update_field
+        self._record_list = []
 
     @staticmethod
     def get_request(
@@ -172,6 +173,25 @@ class LOLObject:
         try:
             if self.__database:
                 inserted_result = self.__table.insert_one(self._record)
+                return {'status': 'OK', 'result': inserted_result}
+            else:
+                raise ConnectionFailure
+        except PyMongoError:
+            return {'status': 'ERROR', 'error': PyMongoError}
+
+    def append(self):
+        """
+        Процедура добаления записи в список для добавления
+        """
+        self._record_list.append(self._record.copy())
+
+    def insert_many(self) -> Dict:
+        """
+        Метод добавления в таблицу сразу нескольких записей
+        """
+        try:
+            if self.__database:
+                inserted_result = self.__table.insert_many(self._record_list)
                 return {'status': 'OK', 'result': inserted_result}
             else:
                 raise ConnectionFailure

@@ -203,12 +203,30 @@ def load_match_details(match_count: int = 10):
 
     start = datetime.now()
 
+    result = 0
     for i in range(match_count):
-        pass
+        # Найдем рандомный незаполненный матч
+        cursor_match = connection.pandlol.match_list.find({"date_update": None})
+        list_match = list(cursor_match)
+
+        match_index = random.randint(0, len(list_match) - 1)
+        match_id = list_match[match_index]['id']
+        platform = list_match[match_index]['platform']
+
+        print(match_id)
+        match = Match(
+            connection=connection,
+            record={"platform": platform,
+                    "id": match_id,
+                    "date_insert": list_match[match_index]['date_insert'],
+                    "date_update": datetime.today()}
+        )
+        match_result = match.write()
+        result += match_result
 
     end = datetime.now()
 
-    print(f'Loaded {match_count} matches for {(end - start).seconds} seconds at {end.strftime("%b %d %H:%M:%S")}')
+    print(f'Loaded {result} matches for {(end - start).seconds} seconds at {end.strftime("%b %d %H:%M:%S")}')
 
     # закрываем соединение
     connection.close()
@@ -225,4 +243,4 @@ if __name__ == '__main__':
     elif operation == "2":
         load_random_match_list()
     elif operation == "3":
-        print("You've chosen 3")
+        load_match_details()

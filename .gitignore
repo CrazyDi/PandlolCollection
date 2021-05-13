@@ -128,5 +128,6 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
-/match_list_04_24.csv
-/match_list_04_27.csv
+/*.csv
+/PandlolCollection/*.json
+/*.json
