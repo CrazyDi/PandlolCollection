@@ -492,7 +492,7 @@ class MatchDetail(LOLObject):
     def win(self, value: bool):
         self._record['win'] = value
 
-    def write(self):
+    def write(self) -> Dict:
         """
         Метод записи деталей матча
         :return: Результат

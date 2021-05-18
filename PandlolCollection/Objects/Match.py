@@ -44,25 +44,32 @@ class Match(LOLObject):
     def id(self) -> str:
         return self._record.get('id')
 
-    def write(self):
+    def write(self) -> Dict:
         """
         Метод записывает детали матча в базу
         :return: Количество записанных матчей
         """
-        result = 0
+        result = {"status": 'OK', 'result': 0}
 
         # запишем детали матча
-        result_match_detail = self.__match_detail.write()
+    #    result_match_detail = self.__match_detail.write()
+        result_match_detail = {"status": 'OK', 'result': 10}
 
         # если все хорошо, запишем таймлайн матча
         if result_match_detail['status'] == 'OK':
-            # if result_match_detail['result'] > 0:
-            # result_match_timeline = self.__match_timeline.write()
+            if result_match_detail['result'] > 0:
+                result_match_timeline = self.__match_timeline.write()
 
-            # Если все хорошо, запишем дату обновления матча
-            # if result_match_timeline['status'] == 'OK':
-            result_update = self.update()
-            if result_update['status'] == 'OK':
-                result = result_update['result'].modified_count
+                # Если все хорошо, запишем дату обновления матча
+                if result_match_timeline['status'] == 'OK':
+                    result_update = self.update()
+                    result['result'] = result_update['result']
+
+                    if result_update['status'] == 'OK':
+                        result['result'] = result_update['result'].modified_count
+                else:
+                    result = result_match_timeline
+        else:
+            result = result_match_detail
 
         return result

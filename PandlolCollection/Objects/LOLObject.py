@@ -166,6 +166,21 @@ class LOLObject:
         except PyMongoError:
             return {'status': 'ERROR', 'error': PyMongoError}
 
+    def read_many(self) -> Dict:
+        """
+        Метод все записи, удовлетворяющие условиям
+        :return: Результат
+        """
+        try:
+            if self.__database:
+                found_record = self.__table.find(self.__find_record)
+
+                return {'status': 'OK', 'result': found_record}
+            else:
+                raise ConnectionFailure
+        except PyMongoError:
+            return {'status': 'ERROR', 'error': PyMongoError}
+
     def insert(self) -> Dict:
         """
         Метод добавления записи в таблицу NOSQL БД
