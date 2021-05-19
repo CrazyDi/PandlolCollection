@@ -206,8 +206,11 @@ class LOLObject:
         """
         try:
             if self.__database:
-                inserted_result = self.__table.insert_many(self._record_list)
-                return {'status': 'OK', 'result': inserted_result}
+                if len(self._record_list) > 0:
+                    inserted_result = self.__table.insert_many(self._record_list)
+                    return {'status': 'OK', 'result': inserted_result}
+                else:
+                    return {'status': 'OK', 'result': None}
             else:
                 raise ConnectionFailure
         except PyMongoError:

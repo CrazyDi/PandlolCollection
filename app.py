@@ -197,7 +197,7 @@ def load_random_match_list(count_summoner: int = 10, count_match: int = 100):
     connection.close()
 
 
-def load_match_details(match_count: int = 1):
+def load_match_details(match_count: int = 10):
     # открываем соединение
     connection = MongoClient(Config.NOSQL_CONNECTION_STRING)
 
@@ -211,15 +211,15 @@ def load_match_details(match_count: int = 1):
 
         # match_index = random.randint(0, len(list_match) - 1)
         match_item = random.choice(list_match)
-        match_id = 'RU_330830052'  # match_item['id']
-        platform = 'RU' # match_item['platform']
+        match_id = match_item['id']
+        platform = match_item['platform']
 
         print(match_id)
         match = Match(
             connection=connection,
             record={"platform": platform,
                     "id": match_id,
-                    "date_insert": datetime.today(), # match_item['date_insert'],
+                    "date_insert": match_item['date_insert'],
                     "date_update": datetime.today()}
         )
         match_result = match.write()

@@ -52,8 +52,8 @@ class Match(LOLObject):
         result = {"status": 'OK', 'result': 0}
 
         # запишем детали матча
-    #    result_match_detail = self.__match_detail.write()
-        result_match_detail = {"status": 'OK', 'result': 10}
+        result_match_detail = self.__match_detail.write()
+    #    result_match_detail = {"status": 'OK', 'result': 10}
 
         # если все хорошо, запишем таймлайн матча
         if result_match_detail['status'] == 'OK':
