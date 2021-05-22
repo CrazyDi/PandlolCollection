@@ -244,11 +244,85 @@ def load_match_details(item_id: str = "", hour: int = 1):
     connection.close()
 
 
+def load_summoner_list(platform_param: str = "", tier_param: int = 0, division_param: int = 0, count_pages: int = 10000):
+    """
+    Загрузка призывателей
+    """
+    # открываем соединение
+    connection = MongoClient(Config.NOSQL_CONNECTION_STRING)
+
+    if platform_param:
+        platform_list = [platform_param]
+    else:
+        platform_list = PLATFORM
+
+    if tier_param > 0:
+        tier_list = [tier_param]
+    else:
+        tier_list = TIER
+
+    if division_param > 0:
+        division_list = [division_param]
+    else:
+        if tier_param > 9:
+            division_list = [1]
+        else:
+            division_list = DIVISION
+
+    for platform in platform_list:
+        for tier in tier_list:
+            # Исключаем UNRANKED
+            if tier > 0:
+                for division in division_list:
+                    start = datetime.now()
+
+                    rank = Rank(
+                        connection=connection,
+                        record={
+                            "platform": platform,
+                            "queue": 420,
+                            "tier": tier,
+                            "division": division
+                        }
+                    )
+
+                    # Получаем всех призывателей
+                    summoner_list = rank.get_rank_summoner_list(count_pages=count_pages)
+
+                    result = 0
+
+                    # Загружаем всех призывателей
+                    for summoner_item in summoner_list:
+                        summoner = Summoner(
+                            connection=connection,
+                            record={
+                                "platform": platform,
+                                "id": summoner_item["summonerId"]
+                            }
+                        )
+                        summoner.get_by_id()
+                        result += 1
+                        print(f"Loaded {result} from {len(summoner_list)}")
+
+                    end = datetime.now()
+
+                    print(
+                        'PLATFORM:', platform,
+                        '\nTIER: ', TIER[tier],
+                        '\nDIVISION:', DIVISION[division],
+                        '\nRESULT:', result['num'],
+                        '\nSTART:', start.strftime("%b %d %H:%M:%S"),
+                        '\nEND:', end.strftime("%b %d %H:%M:%S"),
+                        '\nTIME:', (end - start).seconds
+                    )
+
+
 if __name__ == '__main__':
     operation = input("Choose operation:"
                       "\n1: Load max tier pages"
                       "\n2: Load random match list"
-                      "\n3: Load match details \n")
+                      "\n3: Load match details "
+                      "\n4: Load summoner list \n")
 
     if operation == "1":
         load_max_tier_pages()
@@ -264,3 +338,27 @@ if __name__ == '__main__':
         elif load_match_operation == "2":
             count_hours = input("Input count of hours: ")
             load_match_details(hour=int(count_hours))
+    elif operation == "4":
+        input_platform = input("Input platform: ")
+        input_tier = input("Input tier: ")
+        if input_tier:
+            in_tier = int(input_tier)
+        else:
+            in_tier = 0
+
+        input_division = input("Input division: ")
+        if input_division:
+            in_division = int(input_division)
+        else:
+            in_division = 0
+
+        input_count_pages = input("Input count pages: ")
+        if input_count_pages:
+            in_count_pages = int(input_count_pages)
+        else:
+            in_count_pages = 10000
+
+        load_summoner_list(platform_param=input_platform,
+                           tier_param=in_tier,
+                           division_param=in_division,
+                           count_pages=in_count_pages)

@@ -152,7 +152,7 @@ class Summoner(LOLObject):
         :return: Результат
         """
         result_find = self.storage_get_by_id()
-        if not result_find: # or (datetime.today() - result_find.get('date_change', datetime.today())).days > 7:
+        if not result_find or (datetime.today() - result_find.get('date_change', datetime.today())).days > 7:
             result = self.riot_get_by_id()
 
             # Если запись найдена

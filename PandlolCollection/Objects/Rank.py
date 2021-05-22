@@ -5,6 +5,7 @@ from typing import Dict, List
 
 from PandlolCollection.constant import QUEUE, TIER, DIVISION, LEAGUE
 from PandlolCollection.Objects.LOLObject import LOLObject
+from PandlolCollection.Objects.Summoner import Summoner
 
 
 class Rank(LOLObject):
@@ -129,6 +130,67 @@ class Rank(LOLObject):
 
             if page_result.get('status') == 'OK':
                 summoner_list = page_result.get('data')
+        # для высокого эло
+        else:
+            # генерируем страницу призывателей для высокого ело
+            high_elo_result = self.get_request(
+                self.platform,
+                'league',
+                'v4',
+                LEAGUE[self.tier] + '/by-queue',
+                path_params={
+                    'queue': QUEUE[self.queue]['name']
+                }
+            )
+
+            if high_elo_result.get('status') == 'OK':
+                summoner_list = high_elo_result.get('data').get('entries')
+
+        return summoner_list
+
+    def get_rank_summoner_list(self, count_pages: int = 10000):
+        """
+        Получение полного списка призывателей по рангу
+        :return: Список призывателей
+        """
+        summoner_list = []
+        summoner_page = 1
+
+        # для низкого эло
+        if self.tier < 10:
+            # первый запрос
+            page_result = self.get_request(
+                self.platform,
+                'league',
+                'v4',
+                'entries',
+                path_params={
+                    'queue': QUEUE[self.queue]['name'],
+                    'tier': TIER[self.tier],
+                    'division': DIVISION[self.division]
+                },
+                query_params={'page': summoner_page}
+            )
+
+            while len(page_result['data']) > 0 and summoner_page <= count_pages:
+                if page_result.get('status') == 'OK':
+                    summoner_list.append(page_result.get('data'))
+
+                summoner_page += 1
+
+                page_result = self.get_request(
+                    self.platform,
+                    'league',
+                    'v4',
+                    'entries',
+                    path_params={
+                        'queue': QUEUE[self.queue]['name'],
+                        'tier': TIER[self.tier],
+                        'division': DIVISION[self.division]
+                    },
+                    query_params={'page': summoner_page}
+                )
+
         # для высокого эло
         else:
             # генерируем страницу призывателей для высокого ело
