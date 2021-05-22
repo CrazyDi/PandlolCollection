@@ -1,6 +1,6 @@
 import random
 
-from datetime import datetime
+from datetime import datetime, timedelta
 from pymongo import MongoClient
 
 from config import Config
@@ -197,20 +197,30 @@ def load_random_match_list(count_summoner: int = 10, count_match: int = 100):
     connection.close()
 
 
-def load_match_details(match_count: int = 10):
+def load_match_details(item_id: str = "", hour: int = 1):
     # открываем соединение
     connection = MongoClient(Config.NOSQL_CONNECTION_STRING)
 
     start = datetime.now()
 
     result = 0
-    for i in range(match_count):
-        # Найдем рандомный незаполненный матч
-        cursor_match = connection.pandlol.match_list.find({"date_update": None})
-        list_match = list(cursor_match)
+    end_time = datetime.now() + timedelta(hours=hour)
 
-        # match_index = random.randint(0, len(list_match) - 1)
-        match_item = random.choice(list_match)
+    while datetime.now() < end_time:
+        if item_id:
+            match_item = {
+                'id': item_id,
+                'platform': item_id.split('_')[0],
+                'date_insert': datetime.today()
+            }
+            end_time = datetime.now()
+        else:
+            # Найдем рандомный незаполненный матч
+            cursor_match = connection.pandlol.match_list.find({"date_update": None})
+            list_match = list(cursor_match)
+
+            match_item = random.choice(list_match)
+
         match_id = match_item['id']
         platform = match_item['platform']
 
@@ -245,4 +255,12 @@ if __name__ == '__main__':
     elif operation == "2":
         load_random_match_list()
     elif operation == "3":
-        load_match_details()
+        load_match_operation = input("Choose mode:"
+                                     "\n1: Load one match by match_id"
+                                     "\n2: Load many matches for hours")
+        if load_match_operation == "1":
+            input_id = input("Input match id: ")
+            load_match_details(item_id=input_id)
+        elif load_match_operation == "2":
+            count_hours = input("Input count of hours: ")
+            load_match_details(hour=int(count_hours))

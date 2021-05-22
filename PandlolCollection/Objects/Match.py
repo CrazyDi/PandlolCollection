@@ -1,3 +1,4 @@
+from datetime import datetime
 from pymongo import MongoClient
 from typing import Dict
 
@@ -51,14 +52,18 @@ class Match(LOLObject):
         """
         result = {"status": 'OK', 'result': 0}
 
+    #   start = datetime.now()
         # запишем детали матча
         result_match_detail = self.__match_detail.write()
     #    result_match_detail = {"status": 'OK', 'result': 10}
+    #    print(f"Match detail has been written in {datetime.now() - start} seconds")
 
         # если все хорошо, запишем таймлайн матча
         if result_match_detail['status'] == 'OK':
             if result_match_detail['result'] > 0:
+                # start = datetime.now()
                 result_match_timeline = self.__match_timeline.write()
+        #        print(f"Match timeline has been written in {datetime.now() - start} seconds")
 
                 # Если все хорошо, запишем дату обновления матча
                 if result_match_timeline['status'] == 'OK':
