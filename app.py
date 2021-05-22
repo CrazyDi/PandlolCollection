@@ -302,7 +302,7 @@ def load_summoner_list(platform_param: str = "", tier_param: int = 0, division_p
                         )
                         summoner.get_by_id()
                         result += 1
-                        print(f"Loaded {result} from {len(summoner_list)}")
+                        print(f"{platform} {TIER[tier]} {DIVISION[division]}. Loaded {result} from {len(summoner_list)}")
 
                     end = datetime.now()
 

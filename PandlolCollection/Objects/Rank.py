@@ -174,7 +174,7 @@ class Rank(LOLObject):
 
             while len(page_result['data']) > 0 and summoner_page <= count_pages:
                 if page_result.get('status') == 'OK':
-                    summoner_list.append(page_result.get('data'))
+                    summoner_list.extend(page_result.get('data'))
 
                 summoner_page += 1
 
