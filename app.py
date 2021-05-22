@@ -261,18 +261,18 @@ def load_summoner_list(platform_param: str = "", tier_param: int = 0, division_p
     else:
         tier_list = TIER
 
-    if division_param > 0:
-        division_list = [division_param]
-    else:
-        if tier_param > 9:
-            division_list = [1]
-        else:
-            division_list = DIVISION
-
     for platform in platform_list:
         for tier in tier_list:
             # Исключаем UNRANKED
             if tier > 0:
+                if tier > 9:
+                    division_list = [1]
+                else:
+                    if division_param > 0:
+                        division_list = [division_param]
+                    else:
+                        division_list = DIVISION
+
                 for division in division_list:
                     start = datetime.now()
 
@@ -310,7 +310,7 @@ def load_summoner_list(platform_param: str = "", tier_param: int = 0, division_p
                         'PLATFORM:', platform,
                         '\nTIER: ', TIER[tier],
                         '\nDIVISION:', DIVISION[division],
-                        '\nRESULT:', result['num'],
+                        '\nRESULT:', result,
                         '\nSTART:', start.strftime("%b %d %H:%M:%S"),
                         '\nEND:', end.strftime("%b %d %H:%M:%S"),
                         '\nTIME:', (end - start).seconds
