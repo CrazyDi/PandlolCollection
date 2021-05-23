@@ -67,11 +67,14 @@ class Summoner(LOLObject):
 
         if find_result['status'] == 'OK' and find_result['result']:
             result = find_result['result']
-            self._record['account_id'] = result['account_id']
-            self._record['puu_id'] = result['puu_id']
-            self._record['name'] = result['name']
-            self._record['profile_icon_id'] = result['profile_icon_id']
-            self._record['rank'] = result['rank']
+            if 'account_id' in result:
+                self._record['account_id'] = result['account_id']
+                self._record['puu_id'] = result['puu_id']
+                self._record['name'] = result['name']
+                self._record['profile_icon_id'] = result['profile_icon_id']
+                self._record['rank'] = result['rank']
+            else:
+                result = {}
 
         return result
 
@@ -165,11 +168,11 @@ class Summoner(LOLObject):
                 self._record['date_change'] = datetime.today()
                 self._record['rank'] = result['rank']
 
-            # запишем информацию в хранилище
-            if not result_find:
-                self.insert()
-            else:
-                self.update()
+                # запишем информацию в хранилище
+                if not result_find:
+                    self.insert()
+                else:
+                    self.update()
 
         return self.puu_id is not None
 
