@@ -2,6 +2,7 @@ import requests
 
 from pymongo import MongoClient
 from pymongo.errors import PyMongoError, ConnectionFailure
+from ratelimit import limits, sleep_and_retry
 from time import sleep
 from typing import Dict, List
 
@@ -46,6 +47,8 @@ class LOLObject:
         self._record_list = []
 
     @staticmethod
+    @sleep_and_retry
+    @limits(calls=100, period=120)
     def get_request(
             platform: str,
             api: str,
@@ -96,7 +99,7 @@ class LOLObject:
         }
 
         # Осуществляем сам запрос
-        sleep(1.2)
+        # sleep(1.2)
         try:
             response = requests.get(url=url, headers=headers)
 
