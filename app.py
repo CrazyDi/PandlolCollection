@@ -291,6 +291,8 @@ def load_summoner_list(platform_param: str = "", tier_param: int = 0, division_p
 
                     result = 0
 
+                    print(f"Running {platform} {TIER[tier]} {DIVISION[division]}. Total {len(summoner_list)}.")
+
                     # Загружаем всех призывателей
                     for summoner_item in summoner_list:
                         summoner = Summoner(
@@ -302,9 +304,20 @@ def load_summoner_list(platform_param: str = "", tier_param: int = 0, division_p
                         )
                         summoner.get_by_id()
                         result += 1
-                        print(f"{platform} {TIER[tier]} {DIVISION[division]}. Loaded {result} from {len(summoner_list)}")
+                        with open("summoner_list.log", "a") as f:
+                            f.write(f"\n{platform} {TIER[tier]} {DIVISION[division]}. Loaded {result} from {len(summoner_list)}")
 
                     end = datetime.now()
+
+                    with open("summoner_list.log", "a") as f:
+                        f.write(
+                            '\nPLATFORM:' + platform +
+                            '\nTIER: ' + TIER[tier] +
+                            '\nDIVISION:' + DIVISION[division] +
+                            '\nRESULT:' + str(result) +
+                            '\nSTART:' + start.strftime("%b %d %H:%M:%S") +
+                            '\nEND:' + end.strftime("%b %d %H:%M:%S") +
+                            '\nTIME:' + str((end - start).seconds))
 
                     print(
                         'PLATFORM:', platform,
