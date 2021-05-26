@@ -266,30 +266,31 @@ def load_match_details(item_id: str = "", hour: int = 1):
                                 # Получаем случайный список матчей призывателя
                                 match_list = summoner.get_random_match_list(20)
 
-                                # Найдем рандомный матч
-                                match_id = random.choice(match_list)
+                                if len(match_list) > 0:
+                                    # Найдем рандомный матч
+                                    match_id = random.choice(match_list)
 
-                                print(match_id)
-                                match = Match(
-                                    connection=connection,
-                                    record={"platform": platform,
-                                            "id": match_id,
-                                            "date_insert": datetime.today(),
-                                            "date_update": datetime.today()}
-                                )
+                                    print(match_id)
+                                    match = Match(
+                                        connection=connection,
+                                        record={"platform": platform,
+                                                "id": match_id,
+                                                "date_insert": datetime.today(),
+                                                "date_update": datetime.today()}
+                                    )
 
-                                # проверим, есть ли такой матч
-                                result_match_find = match.read_one()
-                                if result_match_find['status'] == 'OK':
-                                    if result_match_find['result'] is None:
-                                        match_result = match.write()
+                                    # проверим, есть ли такой матч
+                                    result_match_find = match.read_one()
+                                    if result_match_find['status'] == 'OK':
+                                        if result_match_find['result'] is None:
+                                            match_result = match.write()
 
-                                        if match_result['status'] == 'OK':
-                                            result += match_result['result']
+                                            if match_result['status'] == 'OK':
+                                                result += match_result['result']
 
-                                if result % 100 == 0:
-                                    end = datetime.now()
-                                    print(f'Loaded {result} matches for {(end - start).seconds} seconds at {end.strftime("%b %d %H:%M:%S")}')
+                                    if result % 100 == 0:
+                                        end = datetime.now()
+                                        print(f'Loaded {result} matches for {(end - start).seconds} seconds at {end.strftime("%b %d %H:%M:%S")}')
 
     end = datetime.now()
 
