@@ -208,33 +208,88 @@ def load_match_details(item_id: str = "", hour: int = 1):
 
     while datetime.now() < end_time:
         if item_id:
-            match_item = {
-                'id': item_id,
-                'platform': item_id.split('_')[0],
-                'date_insert': datetime.today()
-            }
+            result = 0
+            match_id = item_id
+            platform = item_id.split('_')[0]
+
+            print(match_id)
+            match = Match(
+                connection=connection,
+                record={"platform": platform,
+                        "id": match_id,
+                        "date_insert": datetime.today(),
+                        "date_update": datetime.today()}
+            )
+
+            # проверим, есть ли такой матч
+            result_match_find = match.read_one()
+            if result_match_find['status'] == 'OK':
+                if result_match_find['result'] is not None:
+                    match_result = match.write()
+                    result = match_result["result"]
+
             end_time = datetime.now()
         else:
-            # Найдем рандомный незаполненный матч
-            cursor_match = connection.pandlol.match_list.find({"date_update": None})
-            list_match = list(cursor_match)
+            # по каждому рангу
+            for platform in PLATFORM:
+                for tier in TIER:
+                    if tier > 0:
+                        if tier < 10:
+                            division_list = DIVISION
+                        else:
+                            division_list = [1]
 
-            match_item = random.choice(list_match)
+                        for division in division_list:
+                            rank = Rank(
+                                connection=connection,
+                                record={
+                                    "platform": platform,
+                                    "queue": 420,
+                                    "tier": tier,
+                                    "division": division
+                                }
+                            )
+                            summoner_list = rank.get_random_summoner_list()
 
-        match_id = match_item['id']
-        platform = match_item['platform']
+                            if len(summoner_list) > 0:
+                                # выбираем рандомного призывателя
+                                summoner_id = summoner_list[random.randint(0, len(summoner_list) - 1)]['summonerId']
 
-        print(match_id)
-        match = Match(
-            connection=connection,
-            record={"platform": platform,
-                    "id": match_id,
-                    "date_insert": match_item['date_insert'],
-                    "date_update": datetime.today()}
-        )
-        match_result = match.write()
-        if match_result['status'] == 'OK':
-            result += match_result['result']
+                                summoner = Summoner(
+                                    connection=connection,
+                                    record={
+                                        "platform": platform,
+                                        "id": summoner_id
+                                    }
+                                )
+
+                                # Получаем случайный список матчей призывателя
+                                match_list = summoner.get_random_match_list(20)
+
+                                # Найдем рандомный матч
+                                match_id = random.choice(match_list)
+
+                                print(match_id)
+                                match = Match(
+                                    connection=connection,
+                                    record={"platform": platform,
+                                            "id": match_id,
+                                            "date_insert": datetime.today(),
+                                            "date_update": datetime.today()}
+                                )
+
+                                # проверим, есть ли такой матч
+                                result_match_find = match.read_one()
+                                if result_match_find['status'] == 'OK':
+                                    if result_match_find['result'] is None:
+                                        match_result = match.write()
+
+                                        if match_result['status'] == 'OK':
+                                            result += match_result['result']
+
+                                if result % 100 == 0:
+                                    end = datetime.now()
+                                    print(f'Loaded {result} matches for {(end - start).seconds} seconds at {end.strftime("%b %d %H:%M:%S")}')
 
     end = datetime.now()
 
@@ -332,26 +387,15 @@ def load_summoner_list(platform_param: str = "", tier_param: int = 0, division_p
 
 if __name__ == '__main__':
     operation = input("Choose operation:"
-                      "\n1: Load max tier pages"
-                      "\n2: Load random match list"
-                      "\n3: Load match details "
-                      "\n4: Load summoner list \n")
+                      "\n1: Load summoner list"
+                      "\n2: Load match list \n")
+
+    # if operation == "1":
+    #     load_max_tier_pages()
+    # elif operation == "2":
+    #     load_random_match_list()
 
     if operation == "1":
-        load_max_tier_pages()
-    elif operation == "2":
-        load_random_match_list()
-    elif operation == "3":
-        load_match_operation = input("Choose mode:"
-                                     "\n1: Load one match by match_id"
-                                     "\n2: Load many matches for hours")
-        if load_match_operation == "1":
-            input_id = input("Input match id: ")
-            load_match_details(item_id=input_id)
-        elif load_match_operation == "2":
-            count_hours = input("Input count of hours: ")
-            load_match_details(hour=int(count_hours))
-    elif operation == "4":
         input_platform = input("Input platform: ")
         input_tier = input("Input tier: ")
         if input_tier:
@@ -375,3 +419,13 @@ if __name__ == '__main__':
                            tier_param=in_tier,
                            division_param=in_division,
                            count_pages=in_count_pages)
+    elif operation == "2":
+        load_match_operation = input("Choose mode:"
+                                     "\n1: Load one match by match_id "
+                                     "\n2: Load many matches for hours \n")
+        if load_match_operation == "1":
+            input_id = input("Input match id: ")
+            load_match_details(item_id=input_id)
+        elif load_match_operation == "2":
+            count_hours = input("Input count of hours: ")
+            load_match_details(hour=int(count_hours))

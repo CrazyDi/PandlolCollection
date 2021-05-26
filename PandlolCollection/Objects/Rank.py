@@ -173,6 +173,7 @@ class Rank(LOLObject):
             )
 
             while len(page_result['data']) > 0 and summoner_page <= count_pages:
+
                 if page_result.get('status') == 'OK':
                     summoner_list.extend(page_result.get('data'))
 
@@ -190,6 +191,8 @@ class Rank(LOLObject):
                     },
                     query_params={'page': summoner_page}
                 )
+                if page_result['status'] == 'error':
+                    print(page_result['error'])
 
         # для высокого эло
         else:

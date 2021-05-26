@@ -3,7 +3,7 @@ import requests
 from pymongo import MongoClient
 from pymongo.errors import PyMongoError, ConnectionFailure
 from ratelimit import limits, sleep_and_retry
-from time import sleep
+# from time import sleep
 from typing import Dict, List
 
 from config import Config
@@ -48,7 +48,7 @@ class LOLObject:
 
     @staticmethod
     @sleep_and_retry
-    @limits(calls=100, period=120)
+    @limits(calls=100, period=130)
     def get_request(
             platform: str,
             api: str,

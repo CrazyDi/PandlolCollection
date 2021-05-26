@@ -67,11 +67,7 @@ class Match(LOLObject):
 
                 # Если все хорошо, запишем дату обновления матча
                 if result_match_timeline['status'] == 'OK':
-                    result_update = self.update()
-                    result['result'] = result_update['result']
-
-                    if result_update['status'] == 'OK':
-                        result['result'] = result_update['result'].modified_count
+                    result['result'] += 1
                 else:
                     result = result_match_timeline
         else:
