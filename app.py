@@ -216,7 +216,7 @@ def load_match_details(item_id: str = "", hour: int = 1):
             match = Match(
                 connection=connection,
                 record={"platform": platform,
-                        "id": match_id,
+                        "match_id": match_id,
                         "date_insert": datetime.today(),
                         "date_update": datetime.today()}
             )
@@ -230,67 +230,75 @@ def load_match_details(item_id: str = "", hour: int = 1):
 
             end_time = datetime.now()
         else:
-            # по каждому рангу
-            for platform in PLATFORM:
-                for tier in TIER:
-                    if tier > 0:
-                        if tier < 10:
-                            division_list = DIVISION
-                        else:
-                            division_list = [1]
+            # случайно выберем платформу
+            platform = random.choice(list(PLATFORM))
 
-                        for division in division_list:
-                            rank = Rank(
-                                connection=connection,
-                                record={
-                                    "platform": platform,
-                                    "queue": 420,
-                                    "tier": tier,
-                                    "division": division
-                                }
-                            )
-                            summoner_list = rank.get_random_summoner_list()
+            # случайно выберем ранг
+            tier = random.choice(list(TIER))
 
-                            if len(summoner_list) > 0:
-                                # выбираем рандомного призывателя
-                                summoner_id = summoner_list[random.randint(0, len(summoner_list) - 1)]['summonerId']
+            if tier > 0:
+                if tier < 10:
+                    division = random.choice(list(DIVISION))
+                else:
+                    division = 1
 
-                                summoner = Summoner(
-                                    connection=connection,
-                                    record={
-                                        "platform": platform,
-                                        "id": summoner_id
-                                    }
-                                )
+                queue = random.choice([420, 440])
 
-                                # Получаем случайный список матчей призывателя
-                                match_list = summoner.get_random_match_list(20)
+                rank = Rank(
+                    connection=connection,
+                    record={
+                        "platform": platform,
+                        "queue": queue,
+                        "tier": tier,
+                        "division": division
+                    }
+                )
+                print("get_random_summoner_list")
+                summoner_list = rank.get_random_summoner_list()
 
-                                if len(match_list) > 0:
-                                    # Найдем рандомный матч
-                                    match_id = random.choice(match_list)
+                if len(summoner_list) > 0:
+                    # выбираем рандомного призывателя
+                    summoner_id = summoner_list[random.randint(0, len(summoner_list) - 1)]['summonerId']
 
-                                    print(match_id)
-                                    match = Match(
-                                        connection=connection,
-                                        record={"platform": platform,
-                                                "id": match_id,
-                                                "date_insert": datetime.today(),
-                                                "date_update": datetime.today()}
-                                    )
+                    summoner = Summoner(
+                        connection=connection,
+                        record={
+                            "platform": platform,
+                            "id": summoner_id
+                        }
+                    )
 
-                                    # проверим, есть ли такой матч
-                                    result_match_find = match.read_one()
-                                    if result_match_find['status'] == 'OK':
-                                        if result_match_find['result'] is None:
-                                            match_result = match.write()
+                    # Получаем случайный список матчей призывателя
+                    match_list = summoner.get_random_match_list(20)
 
-                                            if match_result['status'] == 'OK':
-                                                result += match_result['result']
+                    if len(match_list) > 0:
+                        # Найдем рандомный матч
+                        match_id = random.choice(match_list)
 
-                                    if result % 100 == 0:
-                                        end = datetime.now()
-                                        print(f'Loaded {result} matches for {(end - start).seconds} seconds at {end.strftime("%b %d %H:%M:%S")}')
+                        print(f'Start loading match {match_id} at {datetime.now()}')
+                        match = Match(
+                            connection=connection,
+                            record={
+                                "platform": platform,
+                                "match_id": match_id
+                            }
+                        )
+
+                        # проверим, есть ли такой матч
+                        result_match_find = match.read_one()
+
+                        if result_match_find['status'] == 'OK':
+                            if result_match_find['result'] is None:
+                                match_result = match.write()
+
+                                if match_result['status'] == 'OK':
+                                    result += match_result['result']
+
+                                print(f'End loading match {match_id} at {datetime.now()}')
+
+                        if result % 100 == 0:
+                            end = datetime.now()
+                            print(f'Loaded {result} matches for {(end - start).seconds} seconds at {end.strftime("%b %d %H:%M:%S")}')
 
     end = datetime.now()
 

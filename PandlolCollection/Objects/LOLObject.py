@@ -65,6 +65,7 @@ class LOLObject:
         :param url_params: Параметры. path_params - для параметров в url, query_params - для параметров в запрос
         :return:
         """
+
         # Костыль для API match-v5
         if version == 'v5':
             platform_name = REGION[PLATFORM_REGION[platform]]
@@ -109,6 +110,7 @@ class LOLObject:
                     "data": response.json()
                 }
             else:
+                print(f'Request:\n API: {api}\n Response: {response.status_code}')
                 return {
                     "status": "error",
                     "error":
@@ -118,6 +120,7 @@ class LOLObject:
                         }
                 }
         except requests.RequestException as err:
+            print(f'Request:\n API: {api}\n Error: {err.errno}')
             return {
                 "status": "error",
                 "error":
