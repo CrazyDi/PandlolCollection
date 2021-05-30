@@ -521,7 +521,6 @@ class MatchDetail(LOLObject):
             info = result_api['data'].get('info')
             if info:
                 if info.get('queueId', 0) in QUEUE:
-                    print("match_detail")
                     participant_list = result_api['data']['info'].get('participants')
                     team_list = result_api['data']['info'].get('teams')
 

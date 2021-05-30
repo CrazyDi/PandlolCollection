@@ -79,7 +79,7 @@ class MatchTimeline:
                             "team_code": participant["team_code"]
                         } for participant in match_detail_list
                     }
-                    print("match_timeline")
+
                     # По каждой записи в таймлайне
                     for frame in info.get("frames"):
                         # запишем события
