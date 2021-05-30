@@ -105,98 +105,6 @@ def load_max_tier_pages():
     connection.close()
 
 
-def load_random_match_list(count_summoner: int = 10, count_match: int = 100):
-    """
-    Процедура заргузки случайного списка матчей
-    """
-    # открываем соединение
-    connection = MongoClient(Config.NOSQL_CONNECTION_STRING)
-
-    platform_list = PLATFORM
-    tier_list = TIER
-
-    for platform in platform_list:
-        for tier in tier_list:
-            # Для низкого эло
-            if tier < 10:
-                division_list = DIVISION
-            else:  # для высого это рангов нет, возьмем только один
-                division_list = {1: "I"}
-
-            if tier > 0:
-                for division in division_list:
-                    start = datetime.now()
-
-                    i = 1
-                    result = 0
-
-                    # Выбрать заданное количество призывателей
-                    while i < count_summoner:
-                        # Выберем список матчей рандомного призывателя
-                        # для начала найдем рандомного призывателя
-                        # генерируем рандомную страницу призывателей для низкого эло
-                        rank = Rank(
-                            connection=connection,
-                            record={
-                                "platform": platform,
-                                "queue": 420,
-                                "tier": tier,
-                                "division": division
-                            }
-                        )
-                        summoner_list = rank.get_random_summoner_list()
-
-                        if len(summoner_list) > 0:
-                            # выбираем рандомного призывателя
-                            summoner_id = summoner_list[random.randint(0, len(summoner_list) - 1)]['summonerId']
-
-                            summoner = Summoner(
-                                connection=connection,
-                                record={
-                                    "platform": platform,
-                                    "id": summoner_id
-                                }
-                            )
-
-                            # Получаем случайный список матчей призывателя
-                            match_list = summoner.get_random_match_list(count_match)
-
-                            # По каждому матчу
-                            for match_id in match_list:
-
-                                # Запишем матч в БД
-                                match = Match(
-                                    connection=connection,
-                                    record={"platform": platform,
-                                            "id": match_id,
-                                            "date_insert": datetime.today(),
-                                            "date_update": None}
-                                )
-                                find_result = match.read_one()
-                                if find_result['status'] == 'OK' and find_result['result'] is None:
-                                    insert_result = match.insert()
-
-                                    if insert_result['status'] == 'OK' and insert_result['result']:
-                                        result += 1
-
-                        i += 1
-
-                    end = datetime.now()
-
-                    print(
-                        'PLATFORM:', platform,
-                        '\nTIER: ', TIER[tier],
-                        '\nDIVISION:', DIVISION[division],
-                        '\nRESULT:', result,
-                        '\nSTART:', start.strftime("%b %d %H:%M:%S"),
-                        '\nEND:', end.strftime("%b %d %H:%M:%S"),
-                        '\nTIME:', (end - start).seconds
-                    )
-
-    # закрываем соединение
-    connection.close()
-
-
 def load_match_details(item_id: str = "", hour: int = 1):
     # открываем соединение
     connection = MongoClient(Config.NOSQL_CONNECTION_STRING)
@@ -253,7 +161,6 @@ def load_match_details(item_id: str = "", hour: int = 1):
                         "division": division
                     }
                 )
-                print("get_random_summoner_list")
                 summoner_list = rank.get_random_summoner_list()
 
                 if len(summoner_list) > 0:
@@ -275,7 +182,7 @@ def load_match_details(item_id: str = "", hour: int = 1):
                         # Найдем рандомный матч
                         match_id = random.choice(match_list)
 
-                        print(f'Start loading match {match_id} at {datetime.now()}')
+                        print(match_id)
                         match = Match(
                             connection=connection,
                             record={
@@ -293,8 +200,6 @@ def load_match_details(item_id: str = "", hour: int = 1):
 
                                 if match_result['status'] == 'OK':
                                     result += match_result['result']
-
-                                print(f'End loading match {match_id} at {datetime.now()}')
 
                         if result % 100 == 0:
                             end = datetime.now()
@@ -397,12 +302,8 @@ def load_summoner_list(platform_param: str = "", tier_param: int = 0, division_p
 if __name__ == '__main__':
     operation = input("Choose operation:"
                       "\n1: Load summoner list"
-                      "\n2: Load match list \n")
-
-    # if operation == "1":
-    #     load_max_tier_pages()
-    # elif operation == "2":
-    #     load_random_match_list()
+                      "\n2: Load match list"
+                      "\n3: Load max tier pages \n")
 
     if operation == "1":
         input_platform = input("Input platform: ")
@@ -438,3 +339,5 @@ if __name__ == '__main__':
         elif load_match_operation == "2":
             count_hours = input("Input count of hours: ")
             load_match_details(hour=int(count_hours))
+    elif operation == "3":
+        load_max_tier_pages()
