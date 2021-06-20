@@ -130,11 +130,12 @@ def load_match_details(item_id: str = "", hour: int = 1):
             )
 
             # проверим, есть ли такой матч
-            result_match_find = match.read_one()
-            if result_match_find['status'] == 'OK':
-                if result_match_find['result'] is not None:
-                    match_result = match.write()
-                    result = match_result["result"]
+            # result_match_find = match.read_one()
+            # if result_match_find['status'] == 'OK':
+            #     if result_match_find['result'] is None:
+            match_result = match.write()
+
+            #        result = match_result["result"]
 
             end_time = datetime.now()
         else:
@@ -182,7 +183,7 @@ def load_match_details(item_id: str = "", hour: int = 1):
                         # Найдем рандомный матч
                         match_id = random.choice(match_list)
 
-                        print(match_id)
+                        start_match = datetime.now()
                         match = Match(
                             connection=connection,
                             record={
@@ -201,9 +202,8 @@ def load_match_details(item_id: str = "", hour: int = 1):
                                 if match_result['status'] == 'OK':
                                     result += match_result['result']
 
-                        if result % 100 == 0:
-                            end = datetime.now()
-                            print(f'Loaded {result} matches for {(end - start).seconds} seconds at {end.strftime("%b %d %H:%M:%S")}')
+                                    end = datetime.now()
+                                    print(f'Loaded match {match_id} for {(end - start_match).seconds} seconds at {end.strftime("%b %d %H:%M:%S")}')
 
     end = datetime.now()
 

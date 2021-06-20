@@ -1,10 +1,9 @@
-from datetime import datetime
 from pymongo import MongoClient
-from typing import Dict, List
+from typing import Dict
 
-from PandlolCollection.building import BUILDING_LIST
 from PandlolCollection.Objects.LOLObject import LOLObject
 from PandlolCollection.Objects.MatchDetail import MatchDetail
+from PandlolCollection.Objects.MatchEvent import BaseEvent
 
 
 class MatchTimeline:
@@ -36,13 +35,7 @@ class MatchTimeline:
             }
         )
 
-        self.__match_event = MatchEvent(
-            connection=connection,
-            record={
-                "platform": self.__platform,
-                "id": self.__id
-            }
-        )
+        self.__base_event = BaseEvent(connection=connection)
 
     def write(self) -> Dict:
         """
@@ -66,36 +59,46 @@ class MatchTimeline:
             info = result_api['data'].get('info')
 
             if info:
+                match_detail_list = []
                 # прочитаем информацию о деталях матча
                 result_match_detail = self.__match_detail.read_many()
                 if result_match_detail['status'] == 'OK':
                     match_detail_list = list(result_match_detail['result'])
 
-                    # заполним информацию об участниках матча
-                    participant_list = {
-                        participant['participant_code']: {
-                            "puu_id": participant['puu_id'],
-                            "champion_name": participant['champion_pick'],
-                            "team_code": participant["team_code"]
-                        } for participant in match_detail_list
-                    }
+                # заполним информацию об участниках матча
+                participant_list = {
+                    participant['participant_code']: {
+                        "match_id": participant['match_id'],
+                        "queue": participant['queue'],
+                        "platform": participant['platform'],
+                        "patch": participant['patch'],
+                        "tier": participant['tier'],
+                        "division": participant['division'],
+                        "puu_id": participant['puu_id'],
+                        "champion_name": participant['champion_pick'],
+                        "team_code": participant["team_code"],
+                        "surr": participant["surr"],
+                        "early_surr": participant["early_surr"]
+                    } for participant in match_detail_list
+                }
 
-                    # По каждой записи в таймлайне
-                    for frame in info.get("frames"):
-                        # запишем события
-                        result_match_event = self.__match_event.write(frame.get("events"), participant_list)
+                # По каждой записи в таймлайне
+                for frame in info.get("frames"):
+                    # запишем события
+                    self.__base_event.write(frame.get("events"), participant_list)
 
-                        if result_match_event['status'] == 'OK':
-                            result['result'] += result_match_event['result']
+                    # if result_match_event['status'] == 'OK':
+                    #     result['result'] += result_match_event['result']
 
-                        # запишем статы
-                        result_match_state = self.__match_state.write(
-                            frame.get("participantFrames"),
-                            participant_list,
-                            frame.get("timestamp"))
+                    # запишем статы
+                    result_match_state = self.__match_state.write(
+                        frame.get("participantFrames"),
+                        frame.get("timestamp"),
+                        participant_list
+                    )
 
-                        if result_match_state['status'] == 'OK':
-                            result['result'] += result_match_state['result']
+                    if result_match_state['status'] == 'OK':
+                        result['result'] += result_match_state['result']
 
         return result
 
@@ -245,7 +248,7 @@ class MatchState(LOLObject):
     def position(self, value: Dict):
         self._record["position"] = value
 
-    def write(self, state_list: Dict, participant_list: Dict, timestamp: int) -> Dict:
+    def write(self, state_list: Dict, timestamp: int, participant_list: Dict) -> Dict:
         """
         Метод записи статов участника
         :param state_list: Статы из API
@@ -353,403 +356,6 @@ class MatchState(LOLObject):
                 'status': 'OK',
                 'result': len(result_insert['result'].inserted_ids)
             }
-        else:
-            result = result_insert
-
-        return result
-
-
-class MatchEvent(LOLObject):
-    """
-    Класс событий матча
-    """
-    __participant_list = {}
-
-    def __init__(
-            self,
-            connection: MongoClient,
-            record: Dict
-    ):
-        self.__id = record["id"]
-        self.__platform = record["platform"]
-        super().__init__(
-            connection=connection,
-            record=record,
-            table_name='match_event',
-            find_field=['platform', 'match_id'],
-            update_field=[]
-        )
-
-    @property
-    def match_id(self) -> str:
-        return self._record.get("match_id")
-
-    @match_id.setter
-    def match_id(self, value: str):
-        self._record['match_id'] = value
-
-    @property
-    def platform(self) -> str:
-        return self._record["platform"]
-
-    @platform.setter
-    def platform(self, value: str):
-        self._record['platform'] = value
-
-    @property
-    def timestamp(self) -> int:
-        return self._record["timestamp"]
-
-    @timestamp.setter
-    def timestamp(self, value: int):
-        self._record["timestamp"] = value
-
-    @property
-    def event_type(self) -> str:
-        return self._record["event_type"]
-
-    @event_type.setter
-    def event_type(self, value: str):
-        self._record["event_type"] = value
-
-    @property
-    def team_code(self) -> int:
-        return self._record["team_code"]
-
-    @team_code.setter
-    def team_code(self, value: int):
-        self._record["team_code"] = value
-
-    @property
-    def participant_code(self) -> int:
-        return self._record["participant_code"]
-
-    @participant_code.setter
-    def participant_code(self, value: int):
-        self._record["participant_code"] = value
-
-    @property
-    def puu_id(self) -> str:
-        return self._record["puu_id"]
-
-    @puu_id.setter
-    def puu_id(self, value: str):
-        self._record["puu_id"] = value
-
-    @property
-    def champion_name(self) -> str:
-        return self._record["champion_name"]
-
-    @champion_name.setter
-    def champion_name(self, value: str):
-        self._record["champion_name"] = value
-
-    @property
-    def event(self) -> Dict:
-        return self._record["event"]
-
-    @event.setter
-    def event(self, value: Dict):
-        self._record["event"] = value
-
-    def __write_base(
-            self,
-            timestamp: int,
-            event_type: str,
-            participant_code: int = 0,
-            team_code: int = None
-    ) -> int:
-        """
-        Функция записи базовых параметров события
-        :param timestamp: Время события
-        :param event_type: Тип события
-        :param participant_code: Код участника матча
-        :param team_code: Код команды, если нет конкретного участника
-        :return Количество заполненных полей
-        """
-        self._record.clear()
-
-        self.match_id = self.__id
-        self.platform = self.__platform
-        self.timestamp = round(timestamp / 1000)
-        self.event_type = event_type
-
-        # Если указан участник матча, записываем участника
-        if participant_code > 0:
-            self.participant_code = participant_code
-            self.team_code = self.__participant_list[participant_code]["team_code"]
-            self.puu_id = self.__participant_list[participant_code]["puu_id"]
-            self.champion_name = self.__participant_list[participant_code]["champion_name"]
-        else:
-            # Если не указан участник, но указана команда
-            if team_code:
-                self.team_code = team_code
-
-        return len(self._record)
-
-    def __write_match_begin_end(self, event: Dict):
-        self.event = {"real_timestamp": datetime.fromtimestamp(event.get("realTimestamp", 0) / 1000)}
-
-        self.append()
-
-        return len(self.event)
-
-    def __write_skill_level_up(self, event: Dict):
-        self.event = {"skill_code": event.get("skillSlot", 0)}
-
-        self.append()
-
-        return len(self.event)
-
-    def __write_level_up(self, event: Dict):
-        self.event = {"level": event.get("level", 0)}
-
-        self.append()
-
-        return len(self.event)
-
-    def __write_item(self, event: Dict):
-        self.event = {"item_id": event.get("itemId", 0)}
-
-        self.append()
-
-        return len(self.event)
-
-    def __write_ward(self, event: Dict):
-        self.event = {"ward_type": event.get("wardType")}
-
-        self.append()
-
-        return len(self.event)
-
-    def __write_building(self, event: Dict):
-        self.event = {
-            "lane": "UNKNOWN",
-            "building_type": "UNKNOWN",
-            "turret_type": "UNKNOWN"
-        }
-
-        for building in BUILDING_LIST:
-            if building["position"] == event.get("position", {}):
-                self.event = {
-                    "lane": building["lane"],
-                    "building_type": building["building_type"],
-                    "turret_type": building["turret_type"]
-                }
-
-        self.append()
-
-        return len(self.event)
-
-    def __write_monster(self, event: Dict):
-        self.event = {
-            "monster_type": event.get("monsterType"),
-            "monster_sub_type": event.get("monsterSubType"),
-            "position": event.get("position", None)
-        }
-
-        self.append()
-
-        return len(self.event)
-
-    def __write_soul(self, event: Dict):
-        self.event = {
-            "soul_type": event.get("name")
-        }
-
-        self.append()
-
-        return len(self.event)
-
-    def __write_kill(self, event: Dict, special_event_list: List):
-
-        self.event = {
-            "victim_id": event.get("victimId"),
-            "gold_bounty": event.get("bounty", 0),
-            "kill_streak": event.get("killStreakLength", 0),
-            "position": event.get("position", None)
-        }
-
-        for kill in special_event_list:
-            if kill["timestamp"] == event["timestamp"] and kill["killerId"] == event["killerId"]:
-                if kill["killType"] == "KILL_FIRST_BLOOD":
-                    self.event["first_blood"] = 1
-                if kill["killType"] == "KILL_MULTI":
-                    self.event["multikill"] = kill["multiKillLength"]
-                if kill["killType"] == "KILL_ACE":
-                    self.event["ace"] = 1
-
-        self.append()
-
-        return len(self.event)
-
-    def __write_death(self, event: Dict):
-        self.event = {
-            "killer_id": event.get("killerId", 0),
-            "position": event.get("position", None)
-        }
-
-        self.append()
-
-        return len(self.event)
-
-    def __write_assist(self, event: Dict):
-        self.event = {
-            "victim_id": event.get("victimId", 0),
-            "position": event.get("position", None)
-        }
-
-        self.append()
-
-        return len(self.event)
-
-    def __write_unknown_event(self, event: str):
-        with open("unknown.event", "a") as f:
-            f.write(event + ', ' + str(self.__id) + '\n')
-
-    def write(self, event_list: List, participant_list: Dict) -> Dict:
-        """
-        Запись событий игры
-        :param event_list: Список событий
-        :param participant_list: Список участников
-        :return: Результат
-        """
-        self.__participant_list = participant_list
-        self._record_list.clear()
-
-        # выберем отдельно пометки убийств и удалим их из основного списка
-        special_kill_list = []
-        for event in event_list:
-            if event["type"] == "CHAMPION_SPECIAL_KILL":
-                special_kill_list.append(event)
-
-        # обработаем каждое события
-        for event in event_list:
-            # Начало игры
-            if event["type"] == "PAUSE_END":
-                self.__write_base(event.get("timestamp", 0), "MATCH_BEGIN")
-                self.__write_match_begin_end(event)
-
-            # Поднятие уровня чемпиона
-            elif event["type"] == "LEVEL_UP":
-                self.__write_base(event.get("timestamp", 0), "SKILL_LEVEL_UP",
-                                  participant_code=event.get("participantId", 0))
-                self.__write_level_up(event)
-
-            # Поднятие уровня заклинания
-            elif event["type"] == "SKILL_LEVEL_UP":
-                self.__write_base(event.get("timestamp", 0), "SKILL_LEVEL_UP",
-                                  participant_code=event.get("participantId", 0))
-                self.__write_skill_level_up(event)
-
-            # Покупка предмета, уничтожение предмета
-            elif event["type"] in ["ITEM_PURCHASED", "ITEM_DESTROYED", "ITEM_UNDO", "ITEM_SOLD"]:
-                self.__write_base(event.get("timestamp", 0), event["type"],
-                                  participant_code=event.get("participantId", 0))
-                self.__write_item(event)
-
-            # Установка варда
-            elif event["type"] == "WARD_PLACED":
-                self.__write_base(event.get("timestamp", 0), event["type"],
-                                  participant_code=event.get("creatorId", 0))
-                self.__write_ward(event)
-
-            # Убийство варда
-            elif event["type"] == "WARD_KILL":
-                self.__write_base(event.get("timestamp", 0), event["type"],
-                                  participant_code=event.get("killerId", 0))
-                self.__write_ward(event)
-
-            # Уничтожение строения или пластины
-            elif event["type"] in ["TURRET_PLATE_DESTROYED", "BUILDING_KILL"]:
-                if event.get("teamId", 0) == 100:
-                    team_code = 200
-                elif event.get("teamId", 0) == 200:
-                    team_code = 100
-                else:
-                    team_code = None
-
-                self.__write_base(event.get("timestamp", 0), event["type"],
-                                  participant_code=event.get("killerId", 0),
-                                  team_code=team_code)
-                self.__write_building(event)
-
-                for participant in event.get("assistingParticipantIds", []):
-                    event_type = "BUILDING_ASSIST"
-                    if event["type"] == "TURRET_PLATE_DESTROYED":
-                        event_type = "TURRET_PLATE_ASSIST"
-
-                    self.__write_base(event.get("timestamp", 0), event_type,
-                                      participant_code=participant)
-                    self.__write_building(event)
-
-            # Убийство элитного монстра
-            elif event["type"] == "ELITE_MONSTER_KILL":
-                if event.get("killerId", 0) == 0:
-                    team_code = event.get("killerTeamId", 0)
-                else:
-                    team_code = None
-                self.__write_base(event.get("timestamp", 0), event["type"],
-                                  participant_code=event.get("killerId", 0),
-                                  team_code=team_code)
-                self.__write_monster(event)
-
-                for participant in event.get("assistingParticipantIds", []):
-                    event_type = "ELITE_MONSTER_ASSIST"
-
-                    self.__write_base(event.get("timestamp", 0), event_type,
-                                      participant_code=participant)
-                    self.__write_monster(event)
-
-            # Получение души дракона
-            elif event["type"] == "DRAGON_SOUL_GIVEN":
-                self.__write_base(event.get("timestamp", 0), event["type"],
-                                  team_code=event.get("teamId"))
-                self.__write_soul(event)
-
-            # Убийство чемпиона
-            elif event["type"] == "CHAMPION_KILL":
-                # если убийство совершил чемпион
-                if event.get("killerId", 0) > 0:
-                    # запишем убийство
-                    self.__write_base(event.get("timestamp", 0), event["type"],
-                                      participant_code=event.get("killerId", 0))
-                    self.__write_kill(event, special_kill_list)
-
-                    # запишем смерть
-                    self.__write_base(event.get("timestamp", 0), "CHAMPION_DEATH",
-                                      participant_code=event.get("victimId", 0))
-                    self.__write_death(event)
-
-                    # запишем содействия
-                    for participant in event.get("assistingParticipantIds", []):
-                        self.__write_base(event.get("timestamp", 0), "CHAMPION_ASSIST",
-                                          participant_code=participant)
-                        self.__write_assist(event)
-
-            # Окончание игры
-            elif event["type"] == "GAME_END":
-                self.__write_base(event.get("timestamp", 0), "MATCH_END", team_code=event.get("winningTeam", 0))
-                self.__write_match_begin_end(event)
-            # пропускаем отдельные события
-            elif event["type"] in ["CHAMPION_SPECIAL_KILL", "CHAMPION_TRANSFORM"]:
-                pass
-            else:
-                self.__write_unknown_event(event["type"])
-
-        result_insert = self.insert_many()
-
-        if result_insert['status'] == 'OK':
-            if result_insert['result']:
-                result = {
-                    'status': 'OK',
-                    'result': len(result_insert['result'].inserted_ids)
-                }
-            else:
-                result = {
-                    'status': 'OK',
-                    'result': 0
-                }
         else:
             result = result_insert
 
