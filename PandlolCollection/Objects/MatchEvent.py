@@ -36,6 +36,8 @@ class BaseEvent:
                 "patch": participant_list[participant_code]["patch"],
                 "queue": participant_list[participant_code]["queue"],
                 "platform": participant_list[participant_code]["platform"],
+                "tier": participant_list[participant_code]["tier"],
+                "division": participant_list[participant_code]["division"],
                 "team_code": participant_list[participant_code]["team_code"],
                 "participant_code": participant_code,
                 "puu_id": participant_list[participant_code]["puu_id"],
