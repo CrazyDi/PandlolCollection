@@ -2,7 +2,7 @@ import requests
 
 from pymongo import MongoClient
 from pymongo.errors import PyMongoError, ConnectionFailure
-# from ratelimit import limits, sleep_and_retry
+from ratelimit import limits, sleep_and_retry
 from time import sleep
 from typing import Dict, List
 
@@ -47,8 +47,8 @@ class LOLObject:
         self._record_list = []
 
     @staticmethod
-    # @sleep_and_retry
-    # @limits(calls=100, period=130)
+    @sleep_and_retry
+    @limits(calls=100, period=130)
     def get_request(
             platform: str,
             api: str,
@@ -92,7 +92,7 @@ class LOLObject:
             url = url.rstrip('&')
 
         headers = {
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/90.0.4430.85 Safari/537.36",
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",
             "Accept-Language": "ru-RU,ru;q=0.9,en-US;q=0.8,en;q=0.7,be;q=0.6",
             "Accept-Charset": "application/x-www-form-urlencoded; charset=UTF-8",
             "Origin": "https://developer.riotgames.com",
@@ -100,7 +100,7 @@ class LOLObject:
         }
 
         # Осуществляем сам запрос
-        sleep(1.2)
+        # sleep(1.2)
         try:
             response = requests.get(url=url, headers=headers)
 
@@ -110,7 +110,23 @@ class LOLObject:
                     "data": response.json()
                 }
             else:
-                print(f'Request:\n API: {api}\n Response: {response.status_code}')
+                if response.status_code == 429:
+                    retry_after = response.headers["Retry-After"]
+                    print(f'Request:\n API: {api} \nAPI type: {api_type}\n Response: {response.status_code}\n Retry-After: {response.headers["Retry-After"]}')
+
+                    sleep(int(retry_after))
+
+                    response = requests.get(url=url, headers=headers)
+
+                    if response.status_code == 200:
+                        return {
+                            "status": "OK",
+                            "data": response.json()
+                        }
+                    else:
+                        print(f'Request:\n API: {api}\n Response: {response.status_code}')
+                else:
+                    print(f'Request:\n API: {api}\n Response: {response.status_code}')
                 return {
                     "status": "error",
                     "error":
